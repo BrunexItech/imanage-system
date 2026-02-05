@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: imanage_db
+      POSTGRES_USER: imanage_user
+      POSTGRES_PASSWORD: imanage_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - imanage-network
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - imanage-network
+
+  backend:
+    build: ./backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgres://imanage_user:imanage_password@postgres:5432/imanage_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - imanage-network
+
+  pwa:
+    build: ./pwa
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - imanage-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - pwa
+    networks:
+      - imanage-network
+
+volumes:
+  postgres_data:
+
+networks:
+  imanage-network:
+    driver: bridge
