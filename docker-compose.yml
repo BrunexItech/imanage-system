@@ -48,8 +48,9 @@ services:
   pwa:
     build: ./pwa
     volumes:
-      - ./pwa/dist:/output
-    command: echo "Build completed"
+      - ./pwa:/app
+      - ./pwa/dist:/app/dist
+    command: sh -c "npm run build && tail -f /dev/null"
     networks:
       - imanage-network
 
@@ -61,7 +62,6 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./pwa/dist:/usr/share/nginx/html
     depends_on:
-      - backend
       - pwa
     networks:
       - imanage-network
