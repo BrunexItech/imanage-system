@@ -2,15 +2,21 @@ FROM node:18-alpine as build
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 RUN npm ci
 
-# Copy source and build
 COPY . .
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Production stage - serve with a simple HTTP server for local testing
+FROM node:18-alpine as production
+
+WORKDIR /app
+
+RUN npm install -g serve
+
+COPY --from=build /app/dist /app/dist
+
+EXPOSE 3000
+
+CMD ["serve", "-s", "dist", "-l", "3000"]

@@ -167,3 +167,14 @@ AI_CONFIG = {
     'max_tokens': 500,
     'temperature': 0.7,
 }
+
+# Docker/Production settings
+if os.getenv('DOCKER_ENV') == 'true':
+    ALLOWED_HOSTS = ['*']  
+    DATABASES['default']['HOST'] = 'postgres'
+    CHANNEL_LAYERS['default'] = {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('redis', 6379)],
+        },
+    }

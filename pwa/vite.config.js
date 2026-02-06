@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon-192x192.png', 'icon-512x512.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'ManagerMind POS',
         short_name: 'ManagerMind',
@@ -26,17 +26,18 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Fix MIME type issues
+        navigateFallback: '/index.html',
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/localhost:8007\/api\/.*/i,
-            handler: 'NetworkFirst',
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
             options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 10,
+              cacheName: 'google-fonts-cache',
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
               }
             }
           }
@@ -44,6 +45,16 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    // Ensure correct MIME types
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    }
+  },
   server: {
     port: 5173,
     host: true

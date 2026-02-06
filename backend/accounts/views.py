@@ -2,9 +2,31 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer
 from .models import User
+
+# Custom JWT serializer that includes user role
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        # Add user data to response
+        data['user'] = {
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role,
+            'business': user.business.id if user.business else None,
+        }
+        return data
+
+# Custom JWT view that uses our serializer
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
 # User registration view
 class RegisterView(generics.CreateAPIView):
@@ -25,7 +47,7 @@ class RegisterView(generics.CreateAPIView):
             'access': str(refresh.access_token),
         }, status=status.HTTP_201_CREATED)
 
-# User login view
+# User login view (legacy - remove if not used)
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
     
