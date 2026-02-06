@@ -48,8 +48,8 @@ services:
   pwa:
     build: ./pwa
     volumes:
-      - ./pwa/dist:/app/dist
-    command: echo "PWA build complete" && tail -f /dev/null
+      - ./pwa/dist:/output
+    command: echo "Build completed"
     networks:
       - imanage-network
 
