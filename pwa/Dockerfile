@@ -5,7 +5,8 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Copy build files to a directory accessible by nginx
+# Production stage - copy files to volume
 FROM alpine:latest
 WORKDIR /app
 COPY --from=build /app/dist /app/dist
+CMD ["echo", "Build completed"]
