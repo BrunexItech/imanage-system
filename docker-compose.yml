@@ -47,15 +47,13 @@ services:
 
   pwa:
     build: ./pwa
-    ports:
-      - "3000:3000"
     networks:
       - imanage-network
 
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "8083:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./pwa/dist:/usr/share/nginx/html
