@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base API configuration - use relative path through nginx
-const API_BASE_URL = 'http://localhost/api';
+const API_BASE_URL = 'http://38.242.200.152:8083/api';
 
 // Create axios instance
 const api = axios.create({
@@ -41,7 +41,7 @@ api.interceptors.response.use(
 
 // Auth API calls
 export const authAPI = {
-  login: (email, password) => api.post('/token/', { email, password }),
+  login: (email, password) => api.post('/auth/login/', { email, password }),
   register: (userData) => api.post('/auth/register/', userData),
   getProfile: () => api.get('/auth/profile/'),
   logout: () => api.post('/auth/logout/'),
