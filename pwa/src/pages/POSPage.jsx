@@ -63,12 +63,11 @@ export default function POSPage() {
 
   const handleCheckoutSuccess = (result) => {
     console.log('Checkout successful:', result);
-    // Could show receipt or reset
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+    <Container maxWidth="xl" sx={{ py: 2, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <IconButton onClick={() => navigate('/')} sx={{ mr: 2 }}>
           <ArrowBackIcon />
         </IconButton>
@@ -87,9 +86,9 @@ export default function POSPage() {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        {/* Product Grid - 8 columns */}
-        <Grid item xs={12} md={8}>
+      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+        {/* Product Grid - 7 columns */}
+        <Grid item xs={12} md={7}>
           <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
             <TextField
               fullWidth
@@ -107,34 +106,41 @@ export default function POSPage() {
               <CircularProgress />
             </Box>
           ) : (
-            <Grid container spacing={2}>
+            <Grid container spacing={1} sx={{ height: 'calc(100vh - 200px)', overflow: 'auto' }}>
               {filteredProducts.map((product) => (
-                <Grid item xs={6} sm={4} md={3} key={product.id}>
+                <Grid item xs={6} sm={4} md={3} lg={2} key={product.id}>
                   <Paper
                     elevation={1}
                     sx={{
-                      p: 2,
+                      p: 1.5,
                       cursor: 'pointer',
                       '&:hover': { backgroundColor: 'action.hover' },
-                      border: product.current_stock <= 0 ? '2px solid #ff9800' : 'none',
+                      border: product.current_stock <= 0 ? '2px solid #ff9800' : 
+                               product.current_stock <= product.minimum_stock ? '2px solid #f44336' : 'none',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
                     }}
                     onClick={() => handleProductClick(product)}
                   >
-                    <Typography variant="body2" noWrap>
+                    <Typography variant="body2" noWrap fontWeight="medium">
                       {product.name}
                     </Typography>
-                    <Typography variant="caption" color="textSecondary" display="block">
+                    <Typography variant="caption" color="textSecondary" display="block" noWrap>
                       {product.sku}
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold" sx={{ mt: 1 }}>
-                      KES {product.selling_price}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color={product.current_stock <= 0 ? 'warning.main' : 'textSecondary'}
-                    >
-                      Stock: {product.current_stock}
-                    </Typography>
+                    <Box sx={{ mt: 'auto', pt: 1 }}>
+                      <Typography variant="body1" fontWeight="bold" color="primary">
+                        KES {product.selling_price}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color={product.current_stock <= 0 ? 'warning.main' : 
+                               product.current_stock <= product.minimum_stock ? 'error.main' : 'textSecondary'}
+                      >
+                        Stock: {product.current_stock}
+                      </Typography>
+                    </Box>
                   </Paper>
                 </Grid>
               ))}
@@ -153,8 +159,8 @@ export default function POSPage() {
           )}
         </Grid>
 
-        {/* Cart - 4 columns */}
-        <Grid item xs={12} md={4}>
+        {/* Cart & Payment - 5 columns */}
+        <Grid item xs={12} md={5}>
           <Cart onCheckoutSuccess={handleCheckoutSuccess} />
         </Grid>
       </Grid>

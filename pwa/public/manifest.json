@@ -1,7 +1,7 @@
 {
-  "name": "ManagerMind POS",
-  "short_name": "ManagerMind",
-  "description": "Offline-first Point of Sale system",
+  "name": "Imanage AI",
+  "short_name": "Imanage",
+  "description": "AI-Powered Business Management & POS",
   "theme_color": "#1976d2",
   "background_color": "#ffffff",
   "display": "standalone",

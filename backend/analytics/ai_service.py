@@ -4,7 +4,7 @@ import requests
 from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
-from sales.models import Sale
+from sales.models import Sale, SaleItem
 from inventory.models import Product
 from payments.models import Expense
 
@@ -36,12 +36,19 @@ class BusinessAIAnalyzer:
             current_stock__lte=models.F('minimum_stock')
         )
         
+        # Calculate GROSS profit (sales - cost of goods sold)
+        gross_profit = 0
+        for sale in sales:
+            for item in sale.items.all():
+                gross_profit += (item.unit_price - item.cost_price) * item.quantity
+        
         # Prepare data
         data = {
             'date': date.isoformat(),
             'total_sales': float(sales.aggregate(total=models.Sum('total_amount'))['total'] or 0),
             'total_transactions': sales.count(),
             'average_sale': float(sales.aggregate(avg=models.Avg('total_amount'))['avg'] or 0),
+            'gross_profit': float(gross_profit),
             'total_expenses': float(expenses.aggregate(total=models.Sum('amount'))['total'] or 0),
             'low_stock_count': low_stock.count(),
             'top_products': list(sales.values('items__product__name').annotate(
@@ -99,11 +106,12 @@ class BusinessAIAnalyzer:
         Sales Performance:
         - Total Sales: KES {data['total_sales']:.2f}
         - Number of Transactions: {data['total_transactions']}
-        - Average Transaction: ${data['average_sale']:.2f}
+        - Average Transaction: KES {data['average_sale']:.2f}
+        - Gross Profit (Sales - Cost of Goods): KES {data['gross_profit']:.2f}
         
         Expenses:
-        - Total Expenses: ${data['total_expenses']:.2f}
-        - Net Profit: ${data['total_sales'] - data['total_expenses']:.2f}
+        - Total Expenses: KES {data['total_expenses']:.2f}
+        - Net Profit (Gross Profit - Expenses): KES {data['gross_profit'] - data['total_expenses']:.2f}
         
         Inventory:
         - Low Stock Items: {data['low_stock_count']}
@@ -121,6 +129,7 @@ class BusinessAIAnalyzer:
         4. Any alerts/concerns
         
         Keep it professional but conversational.
+        Use KES (Kenyan Shillings) for all monetary values.
         """
     
     def _extract_insights(self, summary):
@@ -146,18 +155,22 @@ class BusinessAIAnalyzer:
         if data['average_sale'] < 50:
             recommendations.append("Consider upselling strategies to increase average transaction value")
         
+        if data['gross_profit'] < (data['total_sales'] * 0.2):
+            recommendations.append("Review product pricing or supplier costs to improve margins")
+        
         return recommendations
     
     def _generate_fallback_summary(self, data):
         """Generate summary when AI API fails"""
-        profit = data['total_sales'] - data['total_expenses']
+        net_profit = data['gross_profit'] - data['total_expenses']
         
         return {
-            'ai_summary': f"On {data['date']}, your business made ${data['total_sales']:.2f} in sales "
-                         f"across {data['total_transactions']} transactions. Net profit was ${profit:.2f}. "
+            'ai_summary': f"On {data['date']}, your business made KES {data['total_sales']:.2f} in sales "
+                         f"across {data['total_transactions']} transactions. Gross profit was KES {data['gross_profit']:.2f}. "
+                         f"After expenses of KES {data['total_expenses']:.2f}, net profit was KES {net_profit:.2f}. "
                          f"You have {data['low_stock_count']} items low in stock.",
             'insights': {
-                'profitability': 'good' if profit > 0 else 'needs_attention',
+                'profitability': 'good' if net_profit > 0 else 'needs_attention',
                 'sales_trend': 'stable',
                 'inventory_health': 'good' if data['low_stock_count'] == 0 else 'needs_attention',
                 'expense_control': 'good' if data['total_expenses'] < (data['total_sales'] * 0.3) else 'needs_attention'

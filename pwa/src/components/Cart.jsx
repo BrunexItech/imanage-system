@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -9,29 +9,55 @@ import {
   Button,
   Divider,
   Paper,
+  TextField,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useCartStore } from '../stores/cartStore';
-import { salesAPI } from '../services/api';
-import { useAuthStore } from '../stores/authStore';
 import { syncService } from '../services/syncService';
+import { useAuthStore } from '../stores/authStore';
 
 export default function Cart({ onCheckoutSuccess }) {
   const { items, removeItem, updateQuantity, getSubtotal, clearCart } = useCartStore();
-  const { user, business } = useAuthStore();
+  const { business } = useAuthStore();
+  
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [tenderAmount, setTenderAmount] = useState('');
+  const [changeAmount, setChangeAmount] = useState(0);
+
+  const subtotal = getSubtotal();
+  const totalAmount = subtotal; // No tax added
+
+  const calculateChange = (tender) => {
+    const tenderNum = parseFloat(tender) || 0;
+    const change = tenderNum - totalAmount;
+    setChangeAmount(change > 0 ? change : 0);
+  };
+
+  const handleTenderChange = (e) => {
+    const value = e.target.value;
+    setTenderAmount(value);
+    calculateChange(value);
+  };
+
+  const handlePaymentMethodChange = (event, newMethod) => {
+    if (newMethod !== null) {
+      setPaymentMethod(newMethod);
+    }
+  };
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
-
-    const subtotal = getSubtotal();
-    const taxRate = business?.tax_rate || 16.0;
-    const taxAmount = (subtotal * taxRate) / 100;
-    const totalAmount = subtotal + taxAmount;
-
-    console.log('Business from auth store:', business);
-    console.log('Business ID:', business?.id);
+    
+    // Validate tender amount
+    const tenderNum = parseFloat(tenderAmount) || 0;
+    if (paymentMethod === 'cash' && tenderNum < totalAmount) {
+      alert('Tender amount is less than total');
+      return;
+    }
 
     const saleData = {
       business: business?.id || 1,
@@ -39,11 +65,12 @@ export default function Cart({ onCheckoutSuccess }) {
       customer_name: '',
       customer_phone: '',
       subtotal: subtotal.toFixed(2),
-      tax_amount: taxAmount.toFixed(2),
+      tax_amount: '0.00', // No tax
       discount_amount: 0,
       total_amount: totalAmount.toFixed(2),
-      amount_paid: totalAmount.toFixed(2),
-      change_given: 0,
+      amount_paid: paymentMethod === 'cash' ? tenderNum.toFixed(2) : totalAmount.toFixed(2),
+      change_given: paymentMethod === 'cash' ? changeAmount.toFixed(2) : 0,
+      payment_method: paymentMethod,
       items: items.map(item => ({
         product: item.product.id,
         product_name: item.product.name,
@@ -60,9 +87,10 @@ export default function Cart({ onCheckoutSuccess }) {
       
       if (result.success) {
         clearCart();
+        setTenderAmount('');
+        setChangeAmount(0);
         if (onCheckoutSuccess) onCheckoutSuccess(result);
         
-        // Show success message
         alert(result.synced ? 'Sale completed!' : 'Sale saved offline - will sync later');
       }
     } catch (error) {
@@ -90,7 +118,7 @@ export default function Cart({ onCheckoutSuccess }) {
         Cart ({items.reduce((sum, item) => sum + item.quantity, 0)} items)
       </Typography>
       
-      <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <List sx={{ flexGrow: 1, overflow: 'auto', mb: 2 }}>
         {items.map((item) => (
           <ListItem
             key={item.product.id}
@@ -131,28 +159,76 @@ export default function Cart({ onCheckoutSuccess }) {
 
       <Divider sx={{ my: 2 }} />
       
-      <Box sx={{ mt: 'auto' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+      {/* Order Summary */}
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <Typography>Subtotal:</Typography>
-          <Typography fontWeight="bold">KES {getSubtotal().toFixed(2)}</Typography>
+          <Typography fontWeight="bold">KES {subtotal.toFixed(2)}</Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography>Tax ({(business?.tax_rate || 16)}%):</Typography>
-          <Typography>KES {((getSubtotal() * (business?.tax_rate || 16)) / 100).toFixed(2)}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
           <Typography variant="h6">Total:</Typography>
           <Typography variant="h6" color="primary">
-            KES {(getSubtotal() + (getSubtotal() * (business?.tax_rate || 16)) / 100).toFixed(2)}
+            KES {totalAmount.toFixed(2)}
           </Typography>
         </Box>
-        
+      </Box>
+
+      {/* Payment Method */}
+      <Typography variant="subtitle2" gutterBottom>
+        Payment Method
+      </Typography>
+      <ToggleButtonGroup
+        value={paymentMethod}
+        exclusive
+        onChange={handlePaymentMethodChange}
+        fullWidth
+        sx={{ mb: 2 }}
+      >
+        <ToggleButton value="cash" size="small">
+          Cash
+        </ToggleButton>
+        <ToggleButton value="mobile_money" size="small">
+          Mobile Money
+        </ToggleButton>
+        <ToggleButton value="card" size="small">
+          Card
+        </ToggleButton>
+      </ToggleButtonGroup>
+
+      {/* Tender Amount & Change */}
+      {paymentMethod === 'cash' && (
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            label="Tender Amount"
+            type="number"
+            value={tenderAmount}
+            onChange={handleTenderChange}
+            InputProps={{ startAdornment: 'KES ' }}
+            size="small"
+            sx={{ mb: 1 }}
+          />
+          {changeAmount > 0 && (
+            <Typography variant="body2" color="success.main">
+              Change: KES {changeAmount.toFixed(2)}
+            </Typography>
+          )}
+          {tenderAmount && parseFloat(tenderAmount) < totalAmount && (
+            <Typography variant="body2" color="error">
+              Amount insufficient
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      {/* Checkout Buttons */}
+      <Box sx={{ mt: 'auto' }}>
         <Button
           variant="contained"
           fullWidth
           size="large"
           onClick={handleCheckout}
-          disabled={false}
+          sx={{ mb: 1 }}
         >
           {navigator.onLine ? 'Process Sale' : 'Save Offline'}
         </Button>
@@ -160,7 +236,6 @@ export default function Cart({ onCheckoutSuccess }) {
         <Button
           variant="outlined"
           fullWidth
-          sx={{ mt: 1 }}
           onClick={clearCart}
         >
           Clear Cart

@@ -9,7 +9,7 @@ from .serializers import DailySummarySerializer
 from sales.models import Sale
 from inventory.models import Product
 from payments.models import Expense
-from django.db import models 
+from django.db import models
 
 # Daily summary views
 class DailySummaryListView(generics.ListAPIView):
@@ -41,17 +41,28 @@ class DashboardView(APIView):
             business=business,
             created_at__date=today,
             status='completed'
-        ).aggregate(
-            total=Sum('total_amount'),
-            count=Count('id'),
-            avg=Avg('total_amount')
         )
+        
+        # Calculate total revenue
+        total_revenue = today_sales.aggregate(total=Sum('total_amount'))['total'] or 0
+        transaction_count = today_sales.count()
+        
+        # Calculate GROSS PROFIT (revenue - cost of goods sold)
+        # This is the key change: using unit_price - cost_price
+        today_gross_profit = 0
+        for sale in today_sales:
+            for item in sale.items.all():
+                item_profit = (item.unit_price - item.cost_price) * item.quantity
+                today_gross_profit += item_profit
         
         # Today's expenses
         today_expenses = Expense.objects.filter(
             business=business,
             created_at__date=today
         ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Calculate NET PROFIT (gross profit - expenses)
+        net_profit = today_gross_profit - today_expenses
         
         # Low stock items
         low_stock = Product.objects.filter(
@@ -67,11 +78,12 @@ class DashboardView(APIView):
         )
         
         return Response({
-            'today_sales': today_sales['total'] or 0,
-            'today_transactions': today_sales['count'] or 0,
-            'avg_transaction': today_sales['avg'] or 0,
+            'today_sales': total_revenue,  # Total revenue
+            'today_transactions': transaction_count,
+            'avg_transaction': total_revenue / transaction_count if transaction_count > 0 else 0,
             'today_expenses': today_expenses,
-            'today_profit': (today_sales['total'] or 0) - today_expenses,
+            'today_profit': net_profit,  # Net profit after expenses
+            'today_gross_profit': today_gross_profit,  # Gross profit before expenses
             'low_stock_items': low_stock,
             'recent_sales': list(recent_sales),
         })
