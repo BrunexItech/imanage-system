@@ -54,7 +54,7 @@ export default function DashboardPage() {
 
   const checkSyncStatus = async () => {
     const pending = await syncService.getPendingCount();
-    const isSyncing = await syncService.isSyncing();
+    const isSyncing = syncService.isSyncing; // FIXED: Changed from syncService.isSyncing()
     setSyncStatus({ pending, syncing: isSyncing });
   };
 
@@ -221,7 +221,7 @@ export default function DashboardPage() {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: '-flex', alignItems: 'center', mb: 2 }}>
                 <SyncIcon color="info" sx={{ fontSize: 40, mr: 2 }} />
                 <Box>
                   <Typography variant="h5" fontWeight="bold">
