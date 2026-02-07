@@ -35,7 +35,7 @@ class Product(models.Model):
     # Pricing
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)  # Buying price
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)  # Selling price
-    profit_margin = models.DecimalField(max_digits=5, decimal_places=2, editable=False)  # Auto-calculated
+    profit_margin = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     
     # Stock management
     current_stock = models.IntegerField(default=0)
