@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -97,12 +97,8 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 };
 
 function App() {
-  const { initialize } = useAuthStore();
-
-  useEffect(() => {
-    // Initialize auth state from localStorage
-    initialize();
-  }, [initialize]);
+  // REMOVED: const { initialize } = useAuthStore();
+  // REMOVED: useEffect with initialize();
 
   return (
     <ThemeProvider theme={theme}>
