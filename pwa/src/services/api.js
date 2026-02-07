@@ -60,6 +60,7 @@ export const productAPI = {
   createProduct: (data) => api.post('/inventory/products/', data),
   searchProducts: (query) => api.get(`/inventory/products/?search=${query}`),
   getLowStock: () => api.get('/inventory/products/low-stock/'),
+  getCategories: () => api.get('/inventory/categories/'),
 };
 
 // Sales API calls
@@ -68,12 +69,57 @@ export const salesAPI = {
   getSales: () => api.get('/sales/sales/'),
   openShift: (startingCash) => api.post('/sales/shifts/open/', { starting_cash: startingCash }),
   closeShift: (actualCash) => api.post('/sales/shifts/close/', { actual_cash: actualCash }),
+  getRecentSales: () => api.get('/sales/sales/recent/'),
 };
 
 // Analytics API calls
 export const analyticsAPI = {
   getDashboard: () => api.get('/analytics/dashboard/'),
   getSalesTrend: () => api.get('/analytics/sales-trend/'),
+  getDailySummaries: () => api.get('/analytics/daily-summaries/'),
+  generateAiSummary: (date) => api.post('/analytics/generate-summary/', { date }),
+};
+
+// Owner App API calls (separate for React Native if needed)
+export const ownerAPI = {
+  getDashboard: () => api.get('/analytics/dashboard/'),
+  getAiSummaries: () => api.get('/analytics/daily-summaries/'),
+  generateAiSummary: (date) => api.post('/analytics/generate-summary/', { date }),
+};
+
+// Dashboard API for the new DashboardPage
+export const dashboardAPI = {
+  getStats: () => api.get('/analytics/dashboard/'),
+};
+
+// WebSocket service for real-time updates
+export const webSocketService = {
+  connect: (businessId, onMessage, onError) => {
+    const wsUrl = API_BASE_URL.replace('http', 'ws').replace('/api', '');
+    const ws = new WebSocket(`${wsUrl}/ws/sales/${businessId}/`);
+    
+    ws.onopen = () => console.log('WebSocket connected');
+    ws.onmessage = (event) => onMessage(JSON.parse(event.data));
+    ws.onerror = (error) => onError(error);
+    ws.onclose = () => console.log('WebSocket disconnected');
+    
+    return {
+      disconnect: () => ws.close(),
+      send: (data) => ws.send(JSON.stringify(data)),
+    };
+  },
+};
+
+// Sync service helper functions
+export const syncAPI = {
+  getPendingCount: () => {
+    // This would check local IndexedDB for pending syncs
+    return Promise.resolve(0); // Placeholder - implement with your offlineDB
+  },
+  forceSync: () => {
+    // Trigger manual sync
+    return Promise.resolve();
+  },
 };
 
 export default api;
