@@ -221,7 +221,7 @@ export default function DashboardPage() {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: '-flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <SyncIcon color="info" sx={{ fontSize: 40, mr: 2 }} />
                 <Box>
                   <Typography variant="h5" fontWeight="bold">
