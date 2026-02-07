@@ -9,6 +9,36 @@ import POSPage from './pages/POSPage';
 import ProductsPage from './pages/ProductsPage';
 import MainLayout from './layouts/MainLayout';
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('React Error Boundary Caught:', error);
+    console.error('Error Info:', errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 20, textAlign: 'center' }}>
+          <h2>Something went wrong</h2>
+          <p>{this.state.error?.message || 'Application error'}</p>
+          <button onClick={() => window.location.reload()}>Reload Page</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -53,13 +83,13 @@ const theme = createTheme({
 });
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { isAuthenticated, hasRole } = useAuthStore();
+  const { isAuthenticated, hasRole, user } = useAuthStore();
   
   if (!isAuthenticated()) {
     return <Navigate to="/login" />;
   }
   
-  if (allowedRoles.length > 0 && !allowedRoles.some(role => hasRole(role))) {
+  if (allowedRoles.length > 0 && user && !allowedRoles.some(role => hasRole(role))) {
     return <Navigate to="/" />;
   }
   
@@ -77,31 +107,33 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          
-          <Route path="/" element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/pos" element={
-            <ProtectedRoute allowedRoles={['cashier', 'supervisor']}>
-              <POSPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/products" element={
-            <ProtectedRoute>
-              <ProductsPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
+      <ErrorBoundary>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            
+            <Route path="/" element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/pos" element={
+              <ProtectedRoute allowedRoles={['cashier', 'supervisor']}>
+                <POSPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/products" element={
+              <ProtectedRoute>
+                <ProductsPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Router>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

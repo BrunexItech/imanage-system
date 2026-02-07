@@ -275,7 +275,7 @@ export default function DashboardPage() {
                 size="large"
                 startIcon={<PosIcon />}
                 onClick={handleOpenPOS}
-                disabled={!['cashier', 'supervisor'].includes(user?.role)}
+                disabled={!user?.role || !['cashier', 'supervisor'].includes(user.role)}
                 sx={{ mt: 'auto' }}
               >
                 Open POS Terminal
