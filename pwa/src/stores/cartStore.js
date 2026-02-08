@@ -54,30 +54,6 @@ export const useCartStore = create(
     }),
     {
       name: 'cart-storage',
-      storage: {
-        getItem: (name) => {
-          try {
-            return localStorage.getItem(name);
-          } catch (error) {
-            console.error('Error reading from localStorage:', error);
-            return null;
-          }
-        },
-        setItem: (name, value) => {
-          try {
-            localStorage.setItem(name, value);
-          } catch (error) {
-            console.error('Error writing to localStorage:', error);
-          }
-        },
-        removeItem: (name) => {
-          try {
-            localStorage.removeItem(name);
-          } catch (error) {
-            console.error('Error removing from localStorage:', error);
-          }
-        },
-      },
     }
   )
 );
