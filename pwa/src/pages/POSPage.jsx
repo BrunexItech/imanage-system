@@ -153,7 +153,14 @@ export default function POSPage() {
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%', 
+      minHeight: '100vh',
+      maxHeight: '100vh',
+      overflow: 'hidden'
+    }}>
       {/* Header */}
       <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -187,12 +194,12 @@ export default function POSPage() {
       )}
 
       {/* Main Content - Fixed layout */}
-      <Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
+      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* Left Panel - Products (70% on desktop, full on mobile) */}
         <Grid item xs={12} md={8} lg={9} sx={{ height: '100%', overflow: 'hidden' }}>
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             {/* Search and Quick Actions */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+            <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} md={7}>
                   <TextField
@@ -240,7 +247,7 @@ export default function POSPage() {
             </Paper>
 
             {/* Categories */}
-            <Paper elevation={1} sx={{ p: 1, mb: 2, borderRadius: 2 }}>
+            <Paper elevation={1} sx={{ p: 1, mb: 2, borderRadius: 2, flexShrink: 0 }}>
               {loadingCategories ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
                   <CircularProgress size={20} />
@@ -271,11 +278,12 @@ export default function POSPage() {
             <Paper 
               elevation={1} 
               sx={{ 
-                flex: 1, 
+                flex: 1,
                 p: 2, 
                 borderRadius: 2,
                 overflow: 'auto',
-                bgcolor: 'grey.50'
+                bgcolor: 'grey.50',
+                minHeight: 0
               }}
             >
               {loading ? (
@@ -414,14 +422,14 @@ export default function POSPage() {
 
         {/* Right Panel - Cart (30% on desktop, below on mobile) */}
         <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflow: 'hidden' }}>
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <Cart onCheckoutSuccess={handleCheckoutSuccess} />
           </Box>
         </Grid>
       </Grid>
 
       {/* Bottom Status Bar */}
-      <Paper elevation={2} sx={{ p: 1.5, mt: 2, borderRadius: 2 }}>
+      <Paper elevation={2} sx={{ p: 1.5, mt: 2, borderRadius: 2, flexShrink: 0 }}>
         <Grid container alignItems="center" spacing={1}>
           <Grid item xs>
             <Typography variant="caption" color="textSecondary">
