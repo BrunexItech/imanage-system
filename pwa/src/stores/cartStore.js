@@ -19,9 +19,9 @@ export const useCartStore = create(
           items.push({
             product,
             quantity,
-            unitPrice: product.selling_price,
-            costPrice: product.cost_price,
-          });
+            unitPrice: Number(product.selling_price) || 0,
+            costPrice: Number(product.cost_price) || 0,
+            });
         }
         
         set({ items });
