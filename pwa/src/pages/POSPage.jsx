@@ -29,31 +29,24 @@ import { useCartStore } from '../stores/cartStore';
 import { productAPI } from '../services/api';
 import Cart from '../components/Cart';
 
-// Mock categories - You'll replace with real categories from API
-const CATEGORIES = [
-  { id: 'all', label: 'All Products' },
-  { id: 'food', label: 'Food & Beverages' },
-  { id: 'electronics', label: 'Electronics' },
-  { id: 'clothing', label: 'Clothing' },
-  { id: 'household', label: 'Household' },
-  { id: 'stationery', label: 'Stationery' },
-];
-
 export default function POSPage() {
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const getTotalItems = useCartStore((state) => state.getTotalItems);
   
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [quickQuantity, setQuickQuantity] = useState(1);
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
 
   useEffect(() => {
@@ -73,6 +66,27 @@ export default function POSPage() {
     }
   };
 
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const response = await productAPI.getCategories();
+      // Add "All Products" as first category
+      const allCategories = [{ id: 'all', name: 'All Products' }, ...response.data];
+      setCategories(allCategories);
+    } catch (err) {
+      console.error('Failed to load categories, using default');
+      // Fallback to default categories if API fails
+      setCategories([
+        { id: 'all', name: 'All Products' },
+        { id: 'food', name: 'Food & Beverages' },
+        { id: 'electronics', name: 'Electronics' },
+        { id: 'other', name: 'Other' },
+      ]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
   const filterProducts = () => {
     let filtered = products;
 
@@ -85,13 +99,17 @@ export default function POSPage() {
       );
     }
 
-    // Apply category filter (if you have categories)
+    // Apply category filter
     if (selectedCategory !== 'all') {
-      // This assumes products have a category field
-      // You'll need to adjust based on your actual data structure
-      filtered = filtered.filter(product => 
-        product.category?.name?.toLowerCase() === selectedCategory.toLowerCase()
-      );
+      filtered = filtered.filter(product => {
+        // Handle both category object and category name
+        if (product.category) {
+          return typeof product.category === 'object' 
+            ? product.category.id === selectedCategory || product.category.name === selectedCategory
+            : product.category === selectedCategory;
+        }
+        return false;
+      });
     }
 
     setFilteredProducts(filtered);
@@ -114,13 +132,11 @@ export default function POSPage() {
   };
 
   const handleBarcodeScan = () => {
-    // This would trigger barcode scanner
     alert('Barcode scanner would open here. For now, type barcode in search.');
     setSearch('');
   };
 
   const handleCheckoutSuccess = () => {
-    // Refresh products after sale
     loadProducts();
   };
 
@@ -137,7 +153,7 @@ export default function POSPage() {
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -170,15 +186,15 @@ export default function POSPage() {
         </Alert>
       )}
 
-      {/* Main Content */}
-      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
-        {/* Left Panel - Products (75%) */}
-        <Grid item xs={12} md={9}>
+      {/* Main Content - Fixed layout */}
+      <Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
+        {/* Left Panel - Products (70% on desktop, full on mobile) */}
+        <Grid item xs={12} md={8} lg={9} sx={{ height: '100%', overflow: 'hidden' }}>
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Search and Quick Actions */}
             <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={7}>
                   <TextField
                     fullWidth
                     placeholder="Search by name, SKU, or scan barcode..."
@@ -202,8 +218,8 @@ export default function POSPage() {
                   />
                 </Grid>
                 
-                <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Grid item xs={12} md={5}>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                     <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
                       Quick Qty:
                     </Typography>
@@ -218,13 +234,6 @@ export default function POSPage() {
                         clickable
                       />
                     ))}
-                    <Box sx={{ flexGrow: 1 }} />
-                    <Chip
-                      icon={<FilterIcon />}
-                      label="Filter"
-                      size="small"
-                      variant="outlined"
-                    />
                   </Box>
                 </Grid>
               </Grid>
@@ -232,24 +241,30 @@ export default function POSPage() {
 
             {/* Categories */}
             <Paper elevation={1} sx={{ p: 1, mb: 2, borderRadius: 2 }}>
-              <Tabs
-                value={selectedCategory}
-                onChange={(e, newValue) => setSelectedCategory(newValue)}
-                variant="scrollable"
-                scrollButtons="auto"
-                sx={{ minHeight: 40 }}
-              >
-                {CATEGORIES.map((cat) => (
-                  <Tab 
-                    key={cat.id}
-                    label={cat.label} 
-                    value={cat.id}
-                    icon={<CategoryIcon />}
-                    iconPosition="start"
-                    sx={{ minHeight: 40, py: 0.5 }}
-                  />
-                ))}
-              </Tabs>
+              {loadingCategories ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+                  <CircularProgress size={20} />
+                </Box>
+              ) : (
+                <Tabs
+                  value={selectedCategory}
+                  onChange={(e, newValue) => setSelectedCategory(newValue)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{ minHeight: 40 }}
+                >
+                  {categories.map((cat) => (
+                    <Tab 
+                      key={cat.id}
+                      label={cat.name} 
+                      value={cat.id}
+                      icon={<CategoryIcon />}
+                      iconPosition="start"
+                      sx={{ minHeight: 40, py: 0.5, fontSize: '0.875rem' }}
+                    />
+                  ))}
+                </Tabs>
+              )}
             </Paper>
 
             {/* Product Grid */}
@@ -337,7 +352,7 @@ export default function POSPage() {
                           SKU: {product.sku}
                         </Typography>
 
-                        {/* Price */}
+                        {/* Price and Actions */}
                         <Box sx={{ mt: 'auto', pt: 1 }}>
                           <Typography variant="body1" fontWeight="bold" color="primary">
                             KES {product.selling_price}
@@ -354,6 +369,7 @@ export default function POSPage() {
                               sx={{ 
                                 bgcolor: 'grey.100',
                                 p: 0.5,
+                                minWidth: 30,
                                 '&:hover': { bgcolor: 'grey.200' }
                               }}
                             >
@@ -369,6 +385,7 @@ export default function POSPage() {
                               sx={{ 
                                 bgcolor: 'grey.100',
                                 p: 0.5,
+                                minWidth: 30,
                                 '&:hover': { bgcolor: 'grey.200' }
                               }}
                             >
@@ -387,7 +404,7 @@ export default function POSPage() {
                     No products found
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    Try a different search or category
+                    {search ? 'Try a different search' : 'Add products from Django admin'}
                   </Typography>
                 </Box>
               )}
@@ -395,9 +412,11 @@ export default function POSPage() {
           </Box>
         </Grid>
 
-        {/* Right Panel - Cart (25%) */}
-        <Grid item xs={12} md={3}>
-          <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+        {/* Right Panel - Cart (30% on desktop, below on mobile) */}
+        <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflow: 'hidden' }}>
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+          </Box>
         </Grid>
       </Grid>
 
@@ -406,8 +425,8 @@ export default function POSPage() {
         <Grid container alignItems="center" spacing={1}>
           <Grid item xs>
             <Typography variant="caption" color="textSecondary">
-              Total Products: {products.length} | Showing: {filteredProducts.length} | 
-              Last updated: {new Date().toLocaleTimeString()}
+              Products: {products.length} | Showing: {filteredProducts.length} | 
+              Updated: {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
             </Typography>
           </Grid>
           <Grid item>
@@ -416,6 +435,7 @@ export default function POSPage() {
               size="small"
               startIcon={<OfferIcon />}
               onClick={() => alert('Discount dialog would open here')}
+              sx={{ fontSize: '0.75rem' }}
             >
               Apply Discount
             </Button>
