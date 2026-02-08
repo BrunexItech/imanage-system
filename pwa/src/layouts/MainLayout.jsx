@@ -243,7 +243,7 @@ const MainLayout = ({ children }) => {
           p: { xs: 2, sm: 3 },
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           height: '100vh',
-          overflow: 'auto',
+          overflow: 'hidden',
           mt: { xs: '56px', sm: 0 }, // Mobile app bar height
         }}
       >
