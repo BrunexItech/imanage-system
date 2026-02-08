@@ -200,9 +200,9 @@ export default function Cart({ onCheckoutSuccess }) {
               }
               secondary={
                 <Typography variant="caption" color="textSecondary">
-                  KES {item.unitPrice.toFixed(2)} × {item.quantity} = 
+                  KES {(Number(item.unitPrice) || 0).toFixed(2)} × {item.quantity} = 
                   <Typography component="span" fontWeight="bold" color="primary" sx={{ ml: 0.5 }}>
-                    KES {(item.unitPrice * item.quantity).toFixed(2)}
+                    KES {(Number(item.unitPrice) * item.quantity || 0).toFixed(2)}
                   </Typography>
                 </Typography>
               }
