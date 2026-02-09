@@ -138,7 +138,7 @@ export default function Cart({ onCheckoutSuccess }) {
             key={item.product.id}
             sx={{ py: 1 }}
             secondaryAction={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', pt: 0.5 }}>
                 <IconButton
                   size="small"
                   onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
@@ -157,7 +157,8 @@ export default function Cart({ onCheckoutSuccess }) {
                   minWidth: 28, 
                   textAlign: 'center', 
                   fontWeight: 'bold',
-                  fontSize: '1rem'
+                  fontSize: '1rem',
+                  mt: 0.5
                 }}>
                   {item.quantity}
                 </Typography>
@@ -178,7 +179,7 @@ export default function Cart({ onCheckoutSuccess }) {
                 <IconButton
                   edge="end"
                   onClick={() => removeItem(item.product.id)}
-                  sx={{ ml: 1, color: 'error.main' }}
+                  sx={{ ml: 1, color: 'error.main', mt: 0.5 }}
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
@@ -251,7 +252,7 @@ export default function Cart({ onCheckoutSuccess }) {
           size="small"
           sx={{ 
             '&.Mui-selected': { 
-              bgcolor: 'secondary.main', 
+              bgcolor: 'success.main', 
               color: 'white',
             }
           }}
@@ -264,7 +265,7 @@ export default function Cart({ onCheckoutSuccess }) {
           size="small"
           sx={{ 
             '&.Mui-selected': { 
-              bgcolor: 'success.main', 
+              bgcolor: 'secondary.main',
               color: 'white',
             }
           }}
