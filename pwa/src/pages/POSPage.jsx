@@ -156,8 +156,8 @@ export default function POSPage() {
     <Box sx={{ 
       display: 'flex', 
       flexDirection: 'column', 
-      height: '100vh',
-      overflow: 'hidden'
+      height: '100%',
+      
     }}>
       {/* Header - Fixed at top */}
       <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
@@ -192,9 +192,12 @@ export default function POSPage() {
       )}
 
       {/* Main Content - Products scrolls, Cart fixed */}
-      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
         {/* Left Panel - Products (scrollable) */}
-        <Grid item xs={12} md={8} lg={9} sx={{ height: '100%', overflow: 'hidden' }}>
+        <Grid item xs={12} md={8} lg={9} sx={{ 
+            height: 'calc(100vh - 180px)', // 🟢 Fixed height for scrolling
+            overflow: 'hidden', // Keep this
+            }}>
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             {/* Search and Quick Actions - Fixed */}
             <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
@@ -420,12 +423,14 @@ export default function POSPage() {
 
         {/* Right Panel - Cart (Fixed/Sticky sidebar) */}
         <Grid item xs={12} md={4} lg={3} sx={{ 
-          position: 'sticky',
-          top: 0,
-          height: 'calc(100vh - 100px)', // Adjust based on header height
-          overflowY: 'auto',
-          pt: 0
-        }}>
+            position: 'fixed',  // 🟢 Changed from 'sticky' to 'fixed'
+            right: 16,  // 🟢 Added - positions from right edge
+            top: 100,  // 🟢 Added - positions from top (adjust as needed)
+            height: 'calc(100vh - 120px)',  // 🟢 Adjusted height
+            width: 'calc(25% - 20px)',  // 🟢 Added - responsive width
+            overflowY: 'auto',
+            zIndex: 1000,  // 🟢 Added - ensures cart stays on top
+            }}>
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Cart onCheckoutSuccess={handleCheckoutSuccess} />
           </Box>
