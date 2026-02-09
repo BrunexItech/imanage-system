@@ -38,7 +38,6 @@ build/
 
 # OS
 .DS_Store
-Thumbs.dbowner-app/
 backend/venv/
 __pycache__/
 *.pyc
