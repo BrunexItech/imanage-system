@@ -173,13 +173,13 @@ export default function POSPage() {
         overflow: 'hidden',
       };
     } else {
-      // For desktop and tablet
+      // For desktop and tablet - make cart slightly wider
       return {
         position: 'fixed',
         right: 16,
         top: 100,
         height: 'calc(100vh - 116px)',
-        width: isTablet ? '35%' : '30%',
+        width: isTablet ? '40%' : '35%', // Increased from 35%/30%
         zIndex: 1000,
         overflowY: 'auto',
         boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
@@ -250,10 +250,10 @@ export default function POSPage() {
           display: 'flex',
           flexDirection: 'column',
           ml: 2,
-          // FIX: Add right margin to prevent ALL content from overlapping
-          mr: isMobile ? 2 : (isTablet ? 'calc(35% + 24px)' : 'calc(30% + 24px)'),
+          // FIXED: Increased margin to create more space between products and cart
+          mr: isMobile ? 2 : (isTablet ? 'calc(45% + 16px)' : 'calc(40% + 16px)'),
           overflow: 'hidden',
-          minWidth: 0, // CRITICAL: Allows flex item to shrink below content size
+          minWidth: 0,
         }}>
           {/* Search and Quick Actions */}
           <Paper elevation={1} sx={{ 
@@ -355,7 +355,6 @@ export default function POSPage() {
               overflow: 'auto',
               bgcolor: 'grey.50',
               minHeight: 0,
-              // CRITICAL FIXES: Constrain the product grid
               width: '100%',
               maxWidth: '100%',
               boxSizing: 'border-box',
@@ -370,10 +369,8 @@ export default function POSPage() {
                 container 
                 spacing={1.5}
                 sx={{
-                  // CRITICAL: Force grid to wrap within container
                   width: '100%',
                   margin: 0,
-                  // Ensure grid items wrap properly
                   flexWrap: 'wrap',
                 }}
               >
@@ -385,7 +382,6 @@ export default function POSPage() {
                     lg={3} 
                     key={product.id}
                     sx={{
-                      // Ensure grid items respect container bounds
                       maxWidth: '100%',
                       boxSizing: 'border-box',
                     }}
@@ -411,7 +407,6 @@ export default function POSPage() {
                           bgcolor: 'background.paper',
                         },
                         position: 'relative',
-                        // Ensure product cards don't overflow
                         width: '100%',
                         boxSizing: 'border-box',
                       }}
