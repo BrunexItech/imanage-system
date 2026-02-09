@@ -14,6 +14,8 @@ import {
   Button,
   InputAdornment,
   Badge,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -30,6 +32,10 @@ import { productAPI } from '../services/api';
 import Cart from '../components/Cart';
 
 export default function POSPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+  
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const getTotalItems = useCartStore((state) => state.getTotalItems);
@@ -152,12 +158,59 @@ export default function POSPage() {
     return 'In Stock';
   };
 
+  // Calculate responsive cart width and products margin
+  const getCartStyles = () => {
+    if (isMobile) {
+      return {
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: '50vh',
+        width: '100%',
+        zIndex: 1000,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        boxShadow: '0px -4px 20px rgba(0,0,0,0.15)',
+      };
+    } else if (isTablet) {
+      return {
+        position: 'fixed',
+        right: 16,
+        top: 100,
+        height: 'calc(100vh - 120px)',
+        width: 'calc(33.333% - 20px)', // md=4 => 33.333%
+        zIndex: 1000,
+      };
+    } else {
+      return {
+        position: 'fixed',
+        right: 16,
+        top: 100,
+        height: 'calc(100vh - 120px)',
+        width: 'calc(25% - 20px)', // lg=3 => 25%
+        zIndex: 1000,
+      };
+    }
+  };
+
+  // Calculate responsive products area margin
+  const getProductsMargin = () => {
+    if (isMobile) {
+      return { marginRight: 0, marginBottom: '50vh' }; // Space for bottom cart
+    } else if (isTablet) {
+      return { marginRight: 'calc(33.333% + 8px)' }; // md=4 + spacing
+    } else {
+      return { marginRight: 'calc(25% + 8px)' }; // lg=3 + spacing
+    }
+  };
+
   return (
     <Box sx={{ 
       display: 'flex', 
       flexDirection: 'column', 
       height: '100%',
-      
+      position: 'relative',
     }}>
       {/* Header - Fixed at top */}
       <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
@@ -191,254 +244,273 @@ export default function POSPage() {
         </Alert>
       )}
 
-      {/* Main Content - Products scrolls, Cart fixed */}
-      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
-        {/* Left Panel - Products (scrollable) */}
-        <Grid item xs={12} md={8} lg={9} sx={{ 
-            height: 'calc(100vh - 180px)', // 🟢 Fixed height for scrolling
-            overflow: 'hidden', // Keep this
-            }}>
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            {/* Search and Quick Actions - Fixed */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={7}>
-                  <TextField
-                    fullWidth
-                    placeholder="Search by name, SKU, or scan barcode..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={handleBarcodeScan} size="small">
-                            <BarcodeIcon />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
+      {/* Main Content Area - Products take full width with right margin for cart */}
+      <Box sx={{ 
+        flex: 1,
+        minHeight: 0,
+        ...getProductsMargin(),
+        transition: 'margin 0.3s ease',
+      }}>
+        {/* Search and Quick Actions - Fixed */}
+        <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={7}>
+              <TextField
+                fullWidth
+                placeholder="Search by name, SKU, or scan barcode..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={handleBarcodeScan} size="small">
+                        <BarcodeIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                size="small"
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={5}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
+                  Quick Qty:
+                </Typography>
+                {[1, 2, 5, 10].map((qty) => (
+                  <Chip
+                    key={qty}
+                    label={`+${qty}`}
                     size="small"
+                    variant={quickQuantity === qty ? 'filled' : 'outlined'}
+                    color={quickQuantity === qty ? 'primary' : 'default'}
+                    onClick={() => setQuickQuantity(qty)}
+                    clickable
                   />
-                </Grid>
-                
-                <Grid item xs={12} md={5}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
-                      Quick Qty:
-                    </Typography>
-                    {[1, 2, 5, 10].map((qty) => (
-                      <Chip
-                        key={qty}
-                        label={`+${qty}`}
-                        size="small"
-                        variant={quickQuantity === qty ? 'filled' : 'outlined'}
-                        color={quickQuantity === qty ? 'primary' : 'default'}
-                        onClick={() => setQuickQuantity(qty)}
-                        clickable
-                      />
-                    ))}
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
+                ))}
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
 
-            {/* Categories - Fixed */}
-            <Paper elevation={1} sx={{ p: 1, mb: 2, borderRadius: 2, flexShrink: 0 }}>
-              {loadingCategories ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-                  <CircularProgress size={20} />
-                </Box>
-              ) : (
-                <Tabs
-                  value={selectedCategory}
-                  onChange={(e, newValue) => setSelectedCategory(newValue)}
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  sx={{ minHeight: 40 }}
-                >
-                  {categories.map((cat) => (
-                    <Tab 
-                      key={cat.id}
-                      label={cat.name} 
-                      value={cat.id}
-                      icon={<CategoryIcon />}
-                      iconPosition="start"
-                      sx={{ minHeight: 40, py: 0.5, fontSize: '0.875rem' }}
-                    />
-                  ))}
-                </Tabs>
-              )}
-            </Paper>
-
-            {/* Product Grid - Scrollable content */}
-            <Paper 
-              elevation={1} 
-              sx={{ 
-                flex: 1,
-                p: 2, 
-                borderRadius: 2,
-                overflow: 'auto',
-                bgcolor: 'grey.50',
-                minHeight: 0
-              }}
+        {/* Categories - Fixed */}
+        <Paper elevation={1} sx={{ p: 1, mb: 2, borderRadius: 2, flexShrink: 0 }}>
+          {loadingCategories ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+              <CircularProgress size={20} />
+            </Box>
+          ) : (
+            <Tabs
+              value={selectedCategory}
+              onChange={(e, newValue) => setSelectedCategory(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{ minHeight: 40 }}
             >
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                  <CircularProgress />
-                </Box>
-              ) : filteredProducts.length > 0 ? (
-                <Grid container spacing={1.5}>
-                  {filteredProducts.map((product) => (
-                    <Grid item xs={6} sm={4} md={3} lg={2.4} key={product.id}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 1.5,
-                          cursor: 'pointer',
-                          border: `1px solid ${
-                            product.current_stock <= 0 ? '#ff9800' :
-                            product.current_stock <= product.minimum_stock ? '#f44336' : 
-                            '#e0e0e0'
-                          }`,
-                          borderRadius: 2,
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                            boxShadow: 2,
-                            bgcolor: 'background.paper',
-                          },
-                          position: 'relative',
-                        }}
-                        onClick={() => handleProductClick(product)}
-                      >
-                        {/* Stock Badge */}
-                        <Chip
-                          label={getStockText(product)}
+              {categories.map((cat) => (
+                <Tab 
+                  key={cat.id}
+                  label={cat.name} 
+                  value={cat.id}
+                  icon={<CategoryIcon />}
+                  iconPosition="start"
+                  sx={{ minHeight: 40, py: 0.5, fontSize: '0.875rem' }}
+                />
+              ))}
+            </Tabs>
+          )}
+        </Paper>
+
+        {/* Product Grid - Scrollable content */}
+        <Paper 
+          elevation={1} 
+          sx={{ 
+            height: isMobile ? 'calc(100vh - 320px)' : 'calc(100vh - 240px)',
+            p: 2, 
+            borderRadius: 2,
+            overflow: 'auto',
+            bgcolor: 'grey.50',
+          }}
+        >
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <CircularProgress />
+            </Box>
+          ) : filteredProducts.length > 0 ? (
+            <Grid container spacing={1.5}>
+              {filteredProducts.map((product) => (
+                <Grid item 
+                  xs={6} 
+                  sm={4} 
+                  md={4} 
+                  lg={3} 
+                  key={product.id}
+                  sx={{
+                    // Ensure proper column count on all screens
+                    ...(isMobile && { xs: 6 }),
+                    ...(isTablet && { md: 4 }),
+                    ...(!isMobile && !isTablet && { lg: 3 }),
+                  }}
+                >
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      cursor: 'pointer',
+                      border: `1px solid ${
+                        product.current_stock <= 0 ? '#ff9800' :
+                        product.current_stock <= product.minimum_stock ? '#f44336' : 
+                        '#e0e0e0'
+                      }`,
+                      borderRadius: 2,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: 2,
+                        bgcolor: 'background.paper',
+                      },
+                      position: 'relative',
+                    }}
+                    onClick={() => handleProductClick(product)}
+                  >
+                    {/* Stock Badge */}
+                    <Chip
+                      label={getStockText(product)}
+                      size="small"
+                      color={getStockColor(product)}
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 8, 
+                        right: 8,
+                        fontSize: '0.6rem',
+                        height: 20,
+                      }}
+                    />
+
+                    {/* Product Info */}
+                    <Typography 
+                      variant="body2" 
+                      fontWeight="medium"
+                      sx={{ 
+                        mb: 0.5,
+                        lineHeight: 1.2,
+                        height: 32,
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
+                      {product.name}
+                    </Typography>
+                    
+                    <Typography 
+                      variant="caption" 
+                      color="textSecondary" 
+                      sx={{ 
+                        fontSize: '0.7rem',
+                        mb: 1,
+                      }}
+                    >
+                      SKU: {product.sku}
+                    </Typography>
+
+                    {/* Price and Actions */}
+                    <Box sx={{ mt: 'auto', pt: 1 }}>
+                      <Typography variant="body1" fontWeight="bold" color="primary">
+                        KES {product.selling_price}
+                      </Typography>
+                      
+                      {/* Quick Actions */}
+                      <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                        <IconButton
                           size="small"
-                          color={getStockColor(product)}
-                          sx={{ 
-                            position: 'absolute', 
-                            top: 8, 
-                            right: 8,
-                            fontSize: '0.6rem',
-                            height: 20,
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuantityClick(product, -1);
                           }}
-                        />
-
-                        {/* Product Info */}
-                        <Typography 
-                          variant="body2" 
-                          fontWeight="medium"
                           sx={{ 
-                            mb: 0.5,
-                            lineHeight: 1.2,
-                            height: 32,
-                            overflow: 'hidden',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
+                            bgcolor: 'grey.100',
+                            p: 0.5,
+                            minWidth: 30,
+                            '&:hover': { bgcolor: 'grey.200' }
                           }}
                         >
-                          {product.name}
-                        </Typography>
+                          <RemoveIcon fontSize="small" />
+                        </IconButton>
                         
-                        <Typography 
-                          variant="caption" 
-                          color="textSecondary" 
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuantityClick(product, 1);
+                          }}
                           sx={{ 
-                            fontSize: '0.7rem',
-                            mb: 1,
+                            bgcolor: 'grey.100',
+                            p: 0.5,
+                            minWidth: 30,
+                            '&:hover': { bgcolor: 'grey.200' }
                           }}
                         >
-                          SKU: {product.sku}
-                        </Typography>
-
-                        {/* Price and Actions */}
-                        <Box sx={{ mt: 'auto', pt: 1 }}>
-                          <Typography variant="body1" fontWeight="bold" color="primary">
-                            KES {product.selling_price}
-                          </Typography>
-                          
-                          {/* Quick Actions */}
-                          <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleQuantityClick(product, -1);
-                              }}
-                              sx={{ 
-                                bgcolor: 'grey.100',
-                                p: 0.5,
-                                minWidth: 30,
-                                '&:hover': { bgcolor: 'grey.200' }
-                              }}
-                            >
-                              <RemoveIcon fontSize="small" />
-                            </IconButton>
-                            
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleQuantityClick(product, 1);
-                              }}
-                              sx={{ 
-                                bgcolor: 'grey.100',
-                                p: 0.5,
-                                minWidth: 30,
-                                '&:hover': { bgcolor: 'grey.200' }
-                              }}
-                            >
-                              <AddIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Box>
-                      </Paper>
-                    </Grid>
-                  ))}
+                          <AddIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Paper>
                 </Grid>
-              ) : (
-                <Box sx={{ textAlign: 'center', p: 4 }}>
-                  <SearchIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                  <Typography variant="body1" color="textSecondary">
-                    No products found
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {search ? 'Try a different search' : 'Add products from Django admin'}
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
-          </Box>
-        </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Box sx={{ textAlign: 'center', p: 4 }}>
+              <SearchIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+              <Typography variant="body1" color="textSecondary">
+                No products found
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {search ? 'Try a different search' : 'Add products from Django admin'}
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+      </Box>
 
-        {/* Right Panel - Cart (Fixed/Sticky sidebar) */}
-        <Grid item xs={12} md={4} lg={3} sx={{ 
-            position: 'fixed',  // 🟢 Changed from 'sticky' to 'fixed'
-            right: 16,  // 🟢 Added - positions from right edge
-            top: 100,  // 🟢 Added - positions from top (adjust as needed)
-            height: 'calc(100vh - 120px)',  // 🟢 Adjusted height
-            width: 'calc(25% - 20px)',  // 🟢 Added - responsive width
-            overflowY: 'auto',
-            zIndex: 1000,  // 🟢 Added - ensures cart stays on top
-            }}>
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Cart onCheckoutSuccess={handleCheckoutSuccess} />
-          </Box>
-        </Grid>
-      </Grid>
+      {/* Cart - Fixed Position (Outside the products flow) */}
+      <Box sx={getCartStyles()}>
+        <Box sx={{ 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column',
+          ...(isMobile && { 
+            '& .MuiPaper-root': { 
+              borderTopLeftRadius: 16, 
+              borderTopRightRadius: 16,
+              height: '100%',
+            } 
+          }),
+        }}>
+          <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+        </Box>
+      </Box>
 
       {/* Bottom Status Bar - Fixed at bottom */}
-      <Paper elevation={2} sx={{ p: 1.5, mt: 2, borderRadius: 2, flexShrink: 0 }}>
+      <Paper elevation={2} sx={{ 
+        p: 1.5, 
+        mt: 2, 
+        borderRadius: 2, 
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 500,
+        marginRight: isMobile ? 0 : getProductsMargin().marginRight,
+      }}>
         <Grid container alignItems="center" spacing={1}>
           <Grid item xs>
             <Typography variant="caption" color="textSecondary">
