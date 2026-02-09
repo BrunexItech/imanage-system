@@ -76,6 +76,8 @@ export const useCartStore = create(
     }),
     {
       name: 'cart-storage',
+      // FIX: Force localStorage instead of broken IndexedDB
+      getStorage: () => localStorage,
       // Optional: Add safe serialization
       partialize: (state) => ({
         items: state.items.map(item => ({
