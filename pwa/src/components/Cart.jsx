@@ -118,25 +118,35 @@ export default function Cart({ onCheckoutSuccess }) {
 
   return (
     <Paper elevation={3} sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom fontWeight="bold">
-        Cart ({items.reduce((sum, item) => sum + item.quantity, 0)} items)
-      </Typography>
+      {/* Cart Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6" fontWeight="bold">
+          Cart ({items.reduce((sum, item) => sum + item.quantity, 0)} items)
+        </Typography>
+        <Chip 
+          label={navigator.onLine ? 'Online' : 'Offline'} 
+          size="small"
+          color={navigator.onLine ? 'success' : 'default'}
+          variant="outlined"
+        />
+      </Box>
       
-      {/* Items list - SIMPLE, no height constraints */}
-      <List sx={{ mb: 2 }}>
+      {/* Cart Items List - Scrollable */}
+      <List sx={{ mb: 2, maxHeight: 300, overflow: 'auto' }}>
         {items.map((item) => (
           <ListItem
             key={item.product.id}
-            sx={{ py: 1.5, borderBottom: '1px solid #eee' }}
+            sx={{ py: 1 }}
             secondaryAction={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <IconButton
                   size="small"
                   onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                   sx={{ 
-                    border: '1px solid #ddd',
-                    width: 32,
-                    height: 32,
+                    border: '1px solid',
+                    borderColor: 'grey.300',
+                    width: 30,
+                    height: 30,
                   }}
                 >
                   <RemoveIcon fontSize="small" />
@@ -156,9 +166,10 @@ export default function Cart({ onCheckoutSuccess }) {
                   size="small"
                   onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                   sx={{ 
-                    border: '1px solid #ddd',
-                    width: 32,
-                    height: 32,
+                    border: '1px solid',
+                    borderColor: 'grey.300',
+                    width: 30,
+                    height: 30,
                   }}
                 >
                   <AddIcon fontSize="small" />
@@ -167,7 +178,7 @@ export default function Cart({ onCheckoutSuccess }) {
                 <IconButton
                   edge="end"
                   onClick={() => removeItem(item.product.id)}
-                  sx={{ ml: 1, color: '#d32f2f' }}
+                  sx={{ ml: 1, color: 'error.main' }}
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
@@ -176,19 +187,18 @@ export default function Cart({ onCheckoutSuccess }) {
           >
             <ListItemText
               primary={
-                <Typography variant="body1" fontWeight="medium">
+                <Typography variant="body2" fontWeight="medium">
                   {item.product.name}
                 </Typography>
               }
               secondary={
-                <Typography variant="body2" color="textSecondary">
-                  KES {Number(item.unitPrice).toFixed(2)} × {item.quantity} = 
+                <Typography variant="caption" color="textSecondary">
+                  KES {(Number(item.unitPrice) || 0).toFixed(2)} × {item.quantity} = 
                   <Typography component="span" fontWeight="bold" color="primary" sx={{ ml: 0.5 }}>
-                    KES {(Number(item.unitPrice) * item.quantity).toFixed(2)}
+                    KES {(Number(item.unitPrice) * item.quantity || 0).toFixed(2)}
                   </Typography>
                 </Typography>
               }
-              sx={{ pr: 14 }}
             />
           </ListItem>
         ))}
@@ -198,7 +208,7 @@ export default function Cart({ onCheckoutSuccess }) {
       
       {/* Order Summary */}
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Typography variant="body1">Subtotal:</Typography>
           <Typography variant="body1" fontWeight="bold">
             KES {subtotal.toFixed(2)}
@@ -206,14 +216,14 @@ export default function Cart({ onCheckoutSuccess }) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">Total:</Typography>
-          <Typography variant="h5" fontWeight="bold" color="primary">
+          <Typography variant="h6" fontWeight="bold" color="primary">
             KES {totalAmount.toFixed(2)}
           </Typography>
         </Box>
       </Box>
 
-      {/* Payment Method - BETTER STYLING */}
-      <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+      {/* Payment Method - Improved */}
+      <Typography variant="subtitle2" gutterBottom>
         Payment Method
       </Typography>
       <ToggleButtonGroup
@@ -221,53 +231,53 @@ export default function Cart({ onCheckoutSuccess }) {
         exclusive
         onChange={handlePaymentMethodChange}
         fullWidth
-        sx={{ mb: 3 }}
+        sx={{ mb: 2 }}
       >
         <ToggleButton 
           value="cash" 
+          size="small"
           sx={{ 
-            py: 1,
             '&.Mui-selected': { 
-              bgcolor: '#1976d2', 
+              bgcolor: 'primary.main', 
               color: 'white',
             }
           }}
         >
-          <AttachMoneyIcon sx={{ mr: 1 }} />
+          <AttachMoneyIcon sx={{ mr: 1, fontSize: 16 }} />
           Cash
         </ToggleButton>
         <ToggleButton 
           value="mobile_money" 
+          size="small"
           sx={{ 
-            py: 1,
             '&.Mui-selected': { 
-              bgcolor: '#dc004e', 
+              bgcolor: 'secondary.main', 
               color: 'white',
             }
           }}
         >
-          <AccountBalanceWalletIcon sx={{ mr: 1 }} />
+          <AccountBalanceWalletIcon sx={{ mr: 1, fontSize: 16 }} />
           M-Pesa
         </ToggleButton>
         <ToggleButton 
           value="card" 
+          size="small"
           sx={{ 
-            py: 1,
             '&.Mui-selected': { 
-              bgcolor: '#2e7d32', 
+              bgcolor: 'success.main', 
               color: 'white',
             }
           }}
         >
-          <CreditCardIcon sx={{ mr: 1 }} />
+          <CreditCardIcon sx={{ mr: 1, fontSize: 16 }} />
           Card
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {/* Tender Amount - BETTER KES BADGE */}
+      {/* Tender Amount & Change - Improved KES badge */}
       {paymentMethod === 'cash' && (
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" gutterBottom fontWeight="medium">
+          <Typography variant="subtitle2" gutterBottom>
             Tender Amount
           </Typography>
           <TextField
@@ -280,44 +290,27 @@ export default function Cart({ onCheckoutSuccess }) {
               startAdornment: (
                 <InputAdornment position="start">
                   <Box sx={{ 
-                    bgcolor: '#333', 
+                    bgcolor: 'primary.main', 
                     color: 'white', 
                     px: 1.5,
                     py: 0.5,
                     borderRadius: 1,
                     fontWeight: 'bold',
-                    fontSize: '0.9rem'
+                    fontSize: '0.875rem'
                   }}>
                     KES
                   </Box>
                 </InputAdornment>
               ),
-              sx: { 
-                '& input': { 
-                  fontWeight: 'bold',
-                  textAlign: 'right',
-                  fontSize: '1.1rem'
-                }
-              }
             }}
-            sx={{ mb: 1.5 }}
+            size="small"
+            sx={{ mb: 1 }}
           />
           
           {changeAmount > 0 && (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              p: 1.5,
-              bgcolor: '#e8f5e9',
-              borderRadius: 1,
-              border: '1px solid #4caf50'
-            }}>
-              <Typography variant="body2" fontWeight="medium">
-                Change Due:
-              </Typography>
-              <Typography variant="body1" fontWeight="bold" color="#2e7d32">
-                KES {changeAmount.toFixed(2)}
+            <Box sx={{ p: 1, bgcolor: 'success.light', borderRadius: 1 }}>
+              <Typography variant="body2" fontWeight="medium" color="success.dark">
+                Change Due: KES {changeAmount.toFixed(2)}
               </Typography>
             </Box>
           )}
@@ -325,18 +318,13 @@ export default function Cart({ onCheckoutSuccess }) {
       )}
 
       {/* Checkout Buttons */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         <Button
           variant="contained"
           fullWidth
-          size="large"
+          size="medium"
           onClick={handleCheckout}
-          sx={{ 
-            py: 1.5,
-            fontWeight: 'bold',
-            fontSize: '1rem',
-            bgcolor: '#1976d2'
-          }}
+          sx={{ fontWeight: 'bold' }}
         >
           {navigator.onLine ? 'PROCESS SALE' : 'SAVE OFFLINE'}
         </Button>
@@ -345,11 +333,6 @@ export default function Cart({ onCheckoutSuccess }) {
           variant="outlined"
           fullWidth
           onClick={clearCart}
-          sx={{ 
-            py: 1,
-            borderColor: '#ccc',
-            color: '#666',
-          }}
         >
           Clear Cart
         </Button>
