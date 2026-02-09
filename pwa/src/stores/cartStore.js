@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 // Shopping cart store for POS
 export const useCartStore = create(
@@ -76,24 +76,8 @@ export const useCartStore = create(
     }),
     {
       name: 'cart-storage',
-      // FIX: Force localStorage instead of broken IndexedDB
-      getStorage: () => localStorage,
-      // Optional: Add safe serialization
-      partialize: (state) => ({
-        items: state.items.map(item => ({
-          ...item,
-          // Ensure all values are serializable
-          product: {
-            ...item.product,
-            selling_price: Number(item.product.selling_price) || 0,
-            cost_price: Number(item.product.cost_price) || 0,
-            current_stock: Number(item.product.current_stock) || 0,
-            minimum_stock: Number(item.product.minimum_stock) || 0
-          },
-          unitPrice: Number(item.unitPrice) || 0,
-          costPrice: Number(item.costPrice) || 0
-        }))
-      }),
+      // FIX: Use createJSONStorage like original working version
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );
