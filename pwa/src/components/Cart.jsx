@@ -136,64 +136,63 @@ export default function Cart({ onCheckoutSuccess }) {
         {items.map((item) => (
           <ListItem
             key={item.product.id}
-            sx={{ py: 1 }}
-            secondaryAction={
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', pt: 0.5 }}>
-                <IconButton
-                  size="small"
-                  onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                  sx={{ 
-                    border: '1px solid',
-                    borderColor: 'grey.300',
-                    width: 30,
-                    height: 30,
-                  }}
-                >
-                  <RemoveIcon fontSize="small" />
-                </IconButton>
-                
-                <Typography sx={{ 
-                  mx: 1, 
-                  minWidth: 28, 
-                  textAlign: 'center', 
-                  fontWeight: 'bold',
-                  fontSize: '1rem',
-                  mt: 0.5
-                }}>
-                  {item.quantity}
-                </Typography>
-                
-                <IconButton
-                  size="small"
-                  onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                  sx={{ 
-                    border: '1px solid',
-                    borderColor: 'grey.300',
-                    width: 30,
-                    height: 30,
-                  }}
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
-                
-                <IconButton
-                  edge="end"
-                  onClick={() => removeItem(item.product.id)}
-                  sx={{ ml: 1, color: 'error.main', mt: 0.5 }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            }
+            sx={{ py: 1, alignItems: 'flex-start' }}
           >
             <ListItemText
               primary={
-                <Typography variant="body2" fontWeight="medium">
-                  {item.product.name}
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Typography variant="body2" fontWeight="medium" sx={{ flex: 1, pr: 1 }}>
+                    {item.product.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                      sx={{ 
+                        border: '1px solid',
+                        borderColor: 'grey.300',
+                        width: 30,
+                        height: 30,
+                      }}
+                    >
+                      <RemoveIcon fontSize="small" />
+                    </IconButton>
+                    
+                    <Typography sx={{ 
+                      mx: 1, 
+                      minWidth: 28, 
+                      textAlign: 'center', 
+                      fontWeight: 'bold',
+                      fontSize: '1rem'
+                    }}>
+                      {item.quantity}
+                    </Typography>
+                    
+                    <IconButton
+                      size="small"
+                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                      sx={{ 
+                        border: '1px solid',
+                        borderColor: 'grey.300',
+                        width: 30,
+                        height: 30,
+                      }}
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                    
+                    <IconButton
+                      size="small"
+                      onClick={() => removeItem(item.product.id)}
+                      sx={{ ml: 1, color: 'error.main' }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Box>
               }
               secondary={
-                <Typography variant="caption" color="textSecondary">
+                <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5 }}>
                   KES {(Number(item.unitPrice) || 0).toFixed(2)} × {item.quantity} = 
                   <Typography component="span" fontWeight="bold" color="primary" sx={{ ml: 0.5 }}>
                     KES {(Number(item.unitPrice) * item.quantity || 0).toFixed(2)}
@@ -265,7 +264,7 @@ export default function Cart({ onCheckoutSuccess }) {
           size="small"
           sx={{ 
             '&.Mui-selected': { 
-              bgcolor: 'secondary.main',
+              bgcolor: 'secondary.main', 
               color: 'white',
             }
           }}
