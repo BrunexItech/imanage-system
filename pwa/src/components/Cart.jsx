@@ -54,7 +54,6 @@ export default function Cart({ onCheckoutSuccess }) {
     }
   };
 
-  // Your existing checkout logic - unchanged
   const handleCheckout = async () => {
     if (items.length === 0) return;
     
@@ -106,161 +105,106 @@ export default function Cart({ onCheckoutSuccess }) {
 
   if (items.length === 0) {
     return (
-      <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="h6" gutterBottom color="primary">
+      <Paper elevation={3} sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom align="center">
           🛒 Cart Empty
         </Typography>
-        <Typography variant="body2" color="textSecondary" paragraph>
+        <Typography variant="body2" color="textSecondary" align="center">
           Add products from the products panel
         </Typography>
-        <Chip 
-          label={navigator.onLine ? '🟢 Online' : '🟡 Offline'} 
-          size="small"
-          color={navigator.onLine ? 'success' : 'default'}
-          variant="outlined"
-        />
       </Paper>
     );
   }
 
   return (
-    <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-      {/* Cart Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight="bold" color="primary">
-            Order Summary
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {items.length} {items.length === 1 ? 'item' : 'items'} in cart
-          </Typography>
-        </Box>
-        <Chip 
-          label={navigator.onLine ? 'Online' : 'Offline'} 
-          size="small"
-          color={navigator.onLine ? 'success' : 'default'}
-          variant="outlined"
-        />
-      </Box>
+    <Paper elevation={3} sx={{ p: 2 }}>
+      <Typography variant="h6" gutterBottom fontWeight="bold">
+        Cart ({items.reduce((sum, item) => sum + item.quantity, 0)} items)
+      </Typography>
       
-      {/* Cart Items - Scrollable with fixed height */}
-      <Box sx={{ 
-        mb: 2, 
-        border: '1px solid', 
-        borderColor: 'grey.200', 
-        borderRadius: 1,
-        overflow: 'hidden'
-      }}>
-        <List sx={{ 
-          maxHeight: 250, 
-          overflowY: 'auto',
-          p: 0,
-          '&::-webkit-scrollbar': { width: 6 },
-          '&::-webkit-scrollbar-track': { background: '#f1f1f1' },
-          '&::-webkit-scrollbar-thumb': { background: '#888', borderRadius: 3 },
-        }}>
-          {items.map((item) => (
-            <ListItem
-              key={item.product.id}
-              sx={{
-                borderBottom: '1px solid',
-                borderColor: 'grey.100',
-                py: 1.5,
-                '&:last-child': { borderBottom: 0 }
-              }}
-              secondaryAction={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconButton
-                    size="small"
-                    onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'grey.300',
-                      width: 30,
-                      height: 30,
-                    }}
-                  >
-                    <RemoveIcon fontSize="small" />
-                  </IconButton>
-                  
-                  <Typography sx={{ 
-                    minWidth: 24, 
-                    textAlign: 'center', 
-                    fontWeight: 'bold',
-                    color: 'primary.main'
-                  }}>
-                    {item.quantity}
-                  </Typography>
-                  
-                  <IconButton
-                    size="small"
-                    onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'grey.300',
-                      width: 30,
-                      height: 30,
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                  </IconButton>
-                </Box>
+      {/* Items list - SIMPLE, no height constraints */}
+      <List sx={{ mb: 2 }}>
+        {items.map((item) => (
+          <ListItem
+            key={item.product.id}
+            sx={{ py: 1.5, borderBottom: '1px solid #eee' }}
+            secondaryAction={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                  sx={{ 
+                    border: '1px solid #ddd',
+                    width: 32,
+                    height: 32,
+                  }}
+                >
+                  <RemoveIcon fontSize="small" />
+                </IconButton>
+                
+                <Typography sx={{ 
+                  mx: 1, 
+                  minWidth: 28, 
+                  textAlign: 'center', 
+                  fontWeight: 'bold',
+                  fontSize: '1rem'
+                }}>
+                  {item.quantity}
+                </Typography>
+                
+                <IconButton
+                  size="small"
+                  onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                  sx={{ 
+                    border: '1px solid #ddd',
+                    width: 32,
+                    height: 32,
+                  }}
+                >
+                  <AddIcon fontSize="small" />
+                </IconButton>
+                
+                <IconButton
+                  edge="end"
+                  onClick={() => removeItem(item.product.id)}
+                  sx={{ ml: 1, color: '#d32f2f' }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            }
+          >
+            <ListItemText
+              primary={
+                <Typography variant="body1" fontWeight="medium">
+                  {item.product.name}
+                </Typography>
               }
-            >
-              <ListItemText
-                primary={
-                  <Typography variant="body2" fontWeight="medium" noWrap sx={{ maxWidth: 150 }}>
-                    {item.product.name}
+              secondary={
+                <Typography variant="body2" color="textSecondary">
+                  KES {Number(item.unitPrice).toFixed(2)} × {item.quantity} = 
+                  <Typography component="span" fontWeight="bold" color="primary" sx={{ ml: 0.5 }}>
+                    KES {(Number(item.unitPrice) * item.quantity).toFixed(2)}
                   </Typography>
-                }
-                secondary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                    <Typography variant="caption" color="textSecondary">
-                      KES {Number(item.unitPrice).toFixed(2)}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">×</Typography>
-                    <Typography variant="caption" color="textSecondary">{item.quantity}</Typography>
-                    <Typography variant="caption" color="textSecondary">=</Typography>
-                    <Typography variant="body2" fontWeight="bold" color="primary">
-                      KES {(Number(item.unitPrice) * item.quantity).toFixed(2)}
-                    </Typography>
-                  </Box>
-                }
-                sx={{ pr: 12 }}
-              />
-              <IconButton
-                size="small"
-                onClick={() => removeItem(item.product.id)}
-                sx={{ 
-                  ml: 1,
-                  color: 'error.main',
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </ListItem>
-          ))}
-        </List>
-      </Box>
+                </Typography>
+              }
+              sx={{ pr: 14 }}
+            />
+          </ListItem>
+        ))}
+      </List>
 
+      <Divider sx={{ my: 2 }} />
+      
       {/* Order Summary */}
-      <Box sx={{ mb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
           <Typography variant="body1">Subtotal:</Typography>
           <Typography variant="body1" fontWeight="bold">
             KES {subtotal.toFixed(2)}
           </Typography>
         </Box>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          p: 1.5,
-          bgcolor: 'primary.50',
-          borderRadius: 1,
-          border: '1px solid',
-          borderColor: 'primary.100'
-        }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">Total:</Typography>
           <Typography variant="h5" fontWeight="bold" color="primary">
             KES {totalAmount.toFixed(2)}
@@ -268,9 +212,7 @@ export default function Cart({ onCheckoutSuccess }) {
         </Box>
       </Box>
 
-      <Divider sx={{ my: 2 }} />
-
-      {/* Payment Method */}
+      {/* Payment Method - BETTER STYLING */}
       <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
         Payment Method
       </Typography>
@@ -279,14 +221,14 @@ export default function Cart({ onCheckoutSuccess }) {
         exclusive
         onChange={handlePaymentMethodChange}
         fullWidth
-        sx={{ mb: 2 }}
+        sx={{ mb: 3 }}
       >
         <ToggleButton 
           value="cash" 
           sx={{ 
             py: 1,
             '&.Mui-selected': { 
-              bgcolor: 'primary.main', 
+              bgcolor: '#1976d2', 
               color: 'white',
             }
           }}
@@ -299,7 +241,7 @@ export default function Cart({ onCheckoutSuccess }) {
           sx={{ 
             py: 1,
             '&.Mui-selected': { 
-              bgcolor: 'secondary.main', 
+              bgcolor: '#dc004e', 
               color: 'white',
             }
           }}
@@ -312,7 +254,7 @@ export default function Cart({ onCheckoutSuccess }) {
           sx={{ 
             py: 1,
             '&.Mui-selected': { 
-              bgcolor: 'success.main', 
+              bgcolor: '#2e7d32', 
               color: 'white',
             }
           }}
@@ -322,9 +264,9 @@ export default function Cart({ onCheckoutSuccess }) {
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {/* Tender Amount & Change - Only for Cash */}
+      {/* Tender Amount - BETTER KES BADGE */}
       {paymentMethod === 'cash' && (
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle2" gutterBottom fontWeight="medium">
             Tender Amount
           </Typography>
@@ -338,13 +280,13 @@ export default function Cart({ onCheckoutSuccess }) {
               startAdornment: (
                 <InputAdornment position="start">
                   <Box sx={{ 
-                    bgcolor: 'grey.900', 
+                    bgcolor: '#333', 
                     color: 'white', 
                     px: 1.5,
                     py: 0.5,
-                    borderRadius: 0.5,
+                    borderRadius: 1,
                     fontWeight: 'bold',
-                    fontSize: '0.875rem'
+                    fontSize: '0.9rem'
                   }}>
                     KES
                   </Box>
@@ -358,7 +300,7 @@ export default function Cart({ onCheckoutSuccess }) {
                 }
               }
             }}
-            sx={{ mb: 1 }}
+            sx={{ mb: 1.5 }}
           />
           
           {changeAmount > 0 && (
@@ -367,15 +309,14 @@ export default function Cart({ onCheckoutSuccess }) {
               justifyContent: 'space-between', 
               alignItems: 'center',
               p: 1.5,
-              bgcolor: 'success.50',
+              bgcolor: '#e8f5e9',
               borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'success.200'
+              border: '1px solid #4caf50'
             }}>
               <Typography variant="body2" fontWeight="medium">
                 Change Due:
               </Typography>
-              <Typography variant="body1" fontWeight="bold" color="success.main">
+              <Typography variant="body1" fontWeight="bold" color="#2e7d32">
                 KES {changeAmount.toFixed(2)}
               </Typography>
             </Box>
@@ -394,6 +335,7 @@ export default function Cart({ onCheckoutSuccess }) {
             py: 1.5,
             fontWeight: 'bold',
             fontSize: '1rem',
+            bgcolor: '#1976d2'
           }}
         >
           {navigator.onLine ? 'PROCESS SALE' : 'SAVE OFFLINE'}
@@ -405,8 +347,8 @@ export default function Cart({ onCheckoutSuccess }) {
           onClick={clearCart}
           sx={{ 
             py: 1,
-            borderColor: 'grey.400',
-            color: 'text.secondary',
+            borderColor: '#ccc',
+            color: '#666',
           }}
         >
           Clear Cart
