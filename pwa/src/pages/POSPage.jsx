@@ -156,7 +156,7 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Calculate cart styles - KEEP THE ORIGINAL CART SIZE
+  // Calculate cart styles - Keep original size
   const getCartStyles = () => {
     if (isMobile) {
       return {
@@ -173,7 +173,6 @@ export default function POSPage() {
         overflow: 'hidden',
       };
     } else {
-      // Keep the cart at original size: 35% for tablet, 30% for desktop
       return {
         position: 'fixed',
         right: 16,
@@ -250,12 +249,12 @@ export default function POSPage() {
           display: 'flex',
           flexDirection: 'column',
           ml: 2,
-          // FIX: Reduce products section width slightly more to eliminate overlap
-          mr: isMobile ? 2 : (isTablet ? 'calc(38% + 20px)' : 'calc(33% + 20px)'),
+          // FIX: Reduce width more aggressively
+          mr: isMobile ? 2 : (isTablet ? 'calc(40% + 24px)' : 'calc(35% + 24px)'),
           overflow: 'hidden',
           minWidth: 0,
         }}>
-          {/* Search and Quick Actions */}
+          {/* Search and Quick Actions - Make it more compact */}
           <Paper elevation={1} sx={{ 
             p: 2, 
             mb: 2, 
@@ -264,11 +263,11 @@ export default function POSPage() {
             width: '100%',
             boxSizing: 'border-box',
           }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={7}>
+            <Grid container spacing={1} alignItems="center">
+              <Grid item xs={12} md={8}>
                 <TextField
                   fullWidth
-                  placeholder="Search by name, SKU, or scan barcode..."
+                  placeholder="Search products..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   InputProps={{
@@ -280,21 +279,23 @@ export default function POSPage() {
                     endAdornment: (
                       <InputAdornment position="end">
                         <IconButton onClick={handleBarcodeScan} size="small">
-                          <BarcodeIcon />
+                          <BarcodeIcon fontSize="small" />
                         </IconButton>
                       </InputAdornment>
                     ),
                   }}
                   size="small"
+                  sx={{ fontSize: '0.875rem' }}
                 />
               </Grid>
               
-              <Grid item xs={12} md={5}>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
-                    Quick Qty:
+              <Grid item xs={12} md={4}>
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Typography variant="caption" color="textSecondary" sx={{ mr: 0.5 }}>
+                    Qty:
                   </Typography>
-                  {[1, 2, 5, 10].map((qty) => (
+                  {/* Reduce to only 2 options to save space */}
+                  {[1, 2].map((qty) => (
                     <Chip
                       key={qty}
                       label={`+${qty}`}
@@ -303,6 +304,11 @@ export default function POSPage() {
                       color={quickQuantity === qty ? 'primary' : 'default'}
                       onClick={() => setQuickQuantity(qty)}
                       clickable
+                      sx={{ 
+                        fontSize: '0.7rem',
+                        height: 24,
+                        '& .MuiChip-label': { px: 1 }
+                      }}
                     />
                   ))}
                 </Box>
@@ -310,9 +316,9 @@ export default function POSPage() {
             </Grid>
           </Paper>
 
-          {/* Categories */}
+          {/* Categories - Make tabs smaller */}
           <Paper elevation={1} sx={{ 
-            p: 1, 
+            p: 0.5, 
             mb: 2, 
             borderRadius: 2, 
             flexShrink: 0,
@@ -329,28 +335,34 @@ export default function POSPage() {
                 onChange={(e, newValue) => setSelectedCategory(newValue)}
                 variant="scrollable"
                 scrollButtons="auto"
-                sx={{ minHeight: 40 }}
+                sx={{ minHeight: 36 }}
               >
                 {categories.map((cat) => (
                   <Tab 
                     key={cat.id}
                     label={cat.name} 
                     value={cat.id}
-                    icon={<CategoryIcon />}
+                    icon={<CategoryIcon fontSize="small" />}
                     iconPosition="start"
-                    sx={{ minHeight: 40, py: 0.5, fontSize: '0.875rem' }}
+                    sx={{ 
+                      minHeight: 36, 
+                      py: 0.25, 
+                      fontSize: '0.8rem',
+                      minWidth: 'auto',
+                      px: 1.5,
+                    }}
                   />
                 ))}
               </Tabs>
             )}
           </Paper>
 
-          {/* Product Grid - Scrollable content */}
+          {/* Product Grid - Make product cards narrower */}
           <Paper 
             elevation={1} 
             sx={{ 
               flex: 1,
-              p: 2, 
+              p: 1.5, 
               borderRadius: 2,
               overflow: 'auto',
               bgcolor: 'grey.50',
@@ -367,7 +379,7 @@ export default function POSPage() {
             ) : filteredProducts.length > 0 ? (
               <Grid 
                 container 
-                spacing={1.5}
+                spacing={1}
                 sx={{
                   width: '100%',
                   margin: 0,
@@ -378,8 +390,8 @@ export default function POSPage() {
                   <Grid item 
                     xs={6} 
                     sm={4} 
-                    md={4} 
-                    lg={3} 
+                    md={3}  // Changed from 4 to 3 - makes cards narrower
+                    lg={2}  // Changed from 3 to 2 - makes cards narrower on large screens
                     key={product.id}
                     sx={{
                       maxWidth: '100%',
@@ -389,14 +401,14 @@ export default function POSPage() {
                     <Paper
                       elevation={0}
                       sx={{
-                        p: 1.5,
+                        p: 1,
                         cursor: 'pointer',
                         border: `1px solid ${
                           product.current_stock <= 0 ? '#ff9800' :
                           product.current_stock <= product.minimum_stock ? '#f44336' : 
                           '#e0e0e0'
                         }`,
-                        borderRadius: 2,
+                        borderRadius: 1.5,
                         height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
@@ -412,32 +424,35 @@ export default function POSPage() {
                       }}
                       onClick={() => handleProductClick(product)}
                     >
-                      {/* Stock Badge */}
+                      {/* Stock Badge - Smaller */}
                       <Chip
                         label={getStockText(product)}
                         size="small"
                         color={getStockColor(product)}
                         sx={{ 
                           position: 'absolute', 
-                          top: 8, 
-                          right: 8,
-                          fontSize: '0.6rem',
-                          height: 20,
+                          top: 4, 
+                          right: 4,
+                          fontSize: '0.55rem',
+                          height: 18,
+                          '& .MuiChip-label': { px: 0.5 }
                         }}
                       />
 
-                      {/* Product Info */}
+                      {/* Product Info - More compact */}
                       <Typography 
                         variant="body2" 
                         fontWeight="medium"
                         sx={{ 
-                          mb: 0.5,
-                          lineHeight: 1.2,
-                          height: 32,
+                          mb: 0.25,
+                          lineHeight: 1.1,
+                          height: 28,
                           overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
+                          fontSize: '0.8rem',
+                          pr: 3, // Leave space for stock badge
                         }}
                       >
                         {product.name}
@@ -447,21 +462,21 @@ export default function POSPage() {
                         variant="caption" 
                         color="textSecondary" 
                         sx={{ 
-                          fontSize: '0.7rem',
-                          mb: 1,
+                          fontSize: '0.65rem',
+                          mb: 0.5,
                         }}
                       >
                         SKU: {product.sku}
                       </Typography>
 
-                      {/* Price and Actions */}
-                      <Box sx={{ mt: 'auto', pt: 1 }}>
-                        <Typography variant="body1" fontWeight="bold" color="primary">
+                      {/* Price and Actions - More compact */}
+                      <Box sx={{ mt: 'auto', pt: 0.5 }}>
+                        <Typography variant="body2" fontWeight="bold" color="primary" sx={{ fontSize: '0.9rem' }}>
                           KES {product.selling_price}
                         </Typography>
                         
-                        {/* Quick Actions */}
-                        <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                        {/* Quick Actions - Smaller */}
+                        <Box sx={{ display: 'flex', gap: 0.25, mt: 0.5 }}>
                           <IconButton
                             size="small"
                             onClick={(e) => {
@@ -470,8 +485,9 @@ export default function POSPage() {
                             }}
                             sx={{ 
                               bgcolor: 'grey.100',
-                              p: 0.5,
-                              minWidth: 30,
+                              p: 0.25,
+                              minWidth: 24,
+                              height: 24,
                               '&:hover': { bgcolor: 'grey.200' }
                             }}
                           >
@@ -486,8 +502,9 @@ export default function POSPage() {
                             }}
                             sx={{ 
                               bgcolor: 'grey.100',
-                              p: 0.5,
-                              minWidth: 30,
+                              p: 0.25,
+                              minWidth: 24,
+                              height: 24,
                               '&:hover': { bgcolor: 'grey.200' }
                             }}
                           >
@@ -513,7 +530,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart - Fixed Position (KEEP ORIGINAL SIZE) */}
+        {/* Cart - Fixed Position (Keep original size) */}
         <Box sx={getCartStyles()}>
           <Box sx={{ 
             height: '100%', 
