@@ -418,8 +418,8 @@ export default function POSPage() {
         </Grid>
 
         {/* Right Panel - Cart (30% on desktop, below on mobile) */}
-        <Grid item xs={12} md={4} lg={3}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <Grid item xs={12} md={4} lg={3} sx={{ height: '100%' }}>
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <Cart onCheckoutSuccess={handleCheckoutSuccess} />
           </Box>
         </Grid>
