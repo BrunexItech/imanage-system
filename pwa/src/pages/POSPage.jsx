@@ -173,27 +173,17 @@ export default function POSPage() {
         overflow: 'hidden',
       };
     } else {
-      // For desktop and tablet
+      // For desktop and tablet - use slightly wider cart
       return {
         position: 'fixed',
         right: 16,
         top: 100,
         height: 'calc(100vh - 116px)',
-        width: isTablet ? '33%' : '25%',
+        width: isTablet ? '35%' : '30%',
         zIndex: 1000,
         overflowY: 'auto',
-      };
-    }
-  };
-
-  // Calculate the width for products section to avoid overlap
-  const getProductsSectionStyle = () => {
-    if (isMobile) {
-      return { width: '100%' };
-    } else {
-      return {
-        width: isTablet ? '67%' : '75%',
-        pr: 2, // Add right padding to create space between products and cart
+        boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
+        borderRadius: 2,
       };
     }
   };
@@ -251,16 +241,17 @@ export default function POSPage() {
         minHeight: 0,
         position: 'relative',
         mt: 2,
-        overflow: 'hidden', // Prevent any overflow
       }}>
-        {/* Products Section - Takes 2/3 or 3/4 of space depending on screen size */}
+        {/* Products Section - Takes remaining width */}
         <Box sx={{ 
-          ...getProductsSectionStyle(),
+          flex: 1,
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           ml: 2,
-          overflow: 'hidden', // Ensure no overflow
+          // Key fix: Add right margin equal to cart width plus some spacing
+          mr: isMobile ? 2 : (isTablet ? 'calc(35% + 16px)' : 'calc(30% + 16px)'),
+          overflow: 'hidden',
         }}>
           {/* Search and Quick Actions */}
           <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
@@ -338,7 +329,7 @@ export default function POSPage() {
             )}
           </Paper>
 
-          {/* Product Grid - Scrollable content with proper width constraint */}
+          {/* Product Grid - Scrollable content */}
           <Paper 
             elevation={1} 
             sx={{ 
@@ -348,7 +339,6 @@ export default function POSPage() {
               overflow: 'auto',
               bgcolor: 'grey.50',
               minHeight: 0,
-              minWidth: 0, // Important for flexbox to work correctly
             }}
           >
             {loading ? (
@@ -356,14 +346,7 @@ export default function POSPage() {
                 <CircularProgress />
               </Box>
             ) : filteredProducts.length > 0 ? (
-              <Grid 
-                container 
-                spacing={1.5}
-                sx={{
-                  maxWidth: '100%', // Ensure grid doesn't exceed container
-                  margin: 0, // Remove default margins
-                }}
-              >
+              <Grid container spacing={1.5}>
                 {filteredProducts.map((product) => (
                   <Grid item 
                     xs={6} 
@@ -371,9 +354,6 @@ export default function POSPage() {
                     md={4} 
                     lg={3} 
                     key={product.id}
-                    sx={{
-                      maxWidth: '100%', // Ensure grid items don't overflow
-                    }}
                   >
                     <Paper
                       elevation={0}
@@ -500,7 +480,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart - Fixed Position on the right */}
+        {/* Cart - Fixed Position */}
         <Box sx={getCartStyles()}>
           <Box sx={{ 
             height: '100%', 
