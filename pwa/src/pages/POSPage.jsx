@@ -156,7 +156,7 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Calculate responsive cart width and products margin
+  // Calculate responsive cart width and position
   const getCartStyles = () => {
     if (isMobile) {
       return {
@@ -180,7 +180,7 @@ export default function POSPage() {
         height: 'calc(100vh - 116px)',
         width: 'calc(33.333% - 20px)',
         zIndex: 1000,
-        overflowY: 'auto',
+        overflowY: 'hidden',
       };
     } else {
       return {
@@ -190,19 +190,8 @@ export default function POSPage() {
         height: 'calc(100vh - 116px)',
         width: 'calc(25% - 20px)',
         zIndex: 1000,
-        overflowY: 'auto',
+        overflowY: 'hidden',
       };
-    }
-  };
-
-  // Calculate responsive products area width
-  const getProductsWidth = () => {
-    if (isMobile) {
-      return { width: '100%' };
-    } else if (isTablet) {
-      return { width: 'calc(100% - 33.333%)' };
-    } else {
-      return { width: 'calc(100% - 25%)' };
     }
   };
 
@@ -260,14 +249,15 @@ export default function POSPage() {
         position: 'relative',
         mt: 2,
       }}>
-        {/* Products Section - Takes remaining width */}
+        {/* Products Section - Takes 75% width on desktop/tablet */}
         <Box sx={{ 
           flex: 1,
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           mx: 2,
-          ...getProductsWidth(),
+          maxWidth: isMobile ? '100%' : isTablet ? '66.667%' : '75%',
+          width: '100%',
         }}>
           {/* Search and Quick Actions */}
           <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
@@ -352,7 +342,7 @@ export default function POSPage() {
               flex: 1,
               p: 2, 
               borderRadius: 2,
-              overflow: 'auto',
+              overflowY: 'auto',
               bgcolor: 'grey.50',
               minHeight: 0,
             }}
@@ -362,7 +352,7 @@ export default function POSPage() {
                 <CircularProgress />
               </Box>
             ) : filteredProducts.length > 0 ? (
-              <Grid container spacing={1.5}>
+              <Grid container spacing={1.5} sx={{ width: '100%' }}>
                 {filteredProducts.map((product) => (
                   <Grid item 
                     xs={6} 
@@ -370,6 +360,7 @@ export default function POSPage() {
                     md={4} 
                     lg={3} 
                     key={product.id}
+                    sx={{ maxWidth: '100%' }}
                   >
                     <Paper
                       elevation={0}
@@ -507,7 +498,6 @@ export default function POSPage() {
                 borderTopLeftRadius: 16, 
                 borderTopRightRadius: 16,
                 height: '100%',
-                overflow: 'auto',
               } 
             }),
           }}>
@@ -515,8 +505,6 @@ export default function POSPage() {
           </Box>
         </Box>
       </Box>
-
-      {/* Bottom Status Bar - REMOVED as requested */}
     </Box>
   );
 }

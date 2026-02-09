@@ -105,7 +105,7 @@ export default function Cart({ onCheckoutSuccess }) {
 
   if (items.length === 0) {
     return (
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper elevation={3} sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Typography variant="h6" gutterBottom align="center">
           🛒 Cart Empty
         </Typography>
@@ -117,9 +117,14 @@ export default function Cart({ onCheckoutSuccess }) {
   }
 
   return (
-    <Paper elevation={3} sx={{ p: 2 }}>
-      {/* Cart Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Paper elevation={3} sx={{ 
+      p: 2, 
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      {/* Cart Header - Fixed */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexShrink: 0 }}>
         <Typography variant="h6" fontWeight="bold">
           Cart ({items.reduce((sum, item) => sum + item.quantity, 0)} items)
         </Typography>
@@ -132,7 +137,12 @@ export default function Cart({ onCheckoutSuccess }) {
       </Box>
       
       {/* Cart Items List - Scrollable */}
-      <List sx={{ mb: 2, maxHeight: 300, overflow: 'auto' }}>
+      <List sx={{ 
+        mb: 2, 
+        maxHeight: 250,
+        overflowY: 'auto',
+        flexShrink: 0,
+      }}>
         {items.map((item) => (
           <ListItem
             key={item.product.id}
@@ -204,10 +214,10 @@ export default function Cart({ onCheckoutSuccess }) {
         ))}
       </List>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 2, flexShrink: 0 }} />
       
-      {/* Order Summary */}
-      <Box sx={{ mb: 3 }}>
+      {/* Order Summary - Always Visible */}
+      <Box sx={{ mb: 3, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Typography variant="body1">Subtotal:</Typography>
           <Typography variant="body1" fontWeight="bold">
@@ -222,8 +232,8 @@ export default function Cart({ onCheckoutSuccess }) {
         </Box>
       </Box>
 
-      {/* Payment Method - Improved */}
-      <Typography variant="subtitle2" gutterBottom>
+      {/* Payment Method - Always Visible */}
+      <Typography variant="subtitle2" gutterBottom sx={{ flexShrink: 0 }}>
         Payment Method
       </Typography>
       <ToggleButtonGroup
@@ -231,7 +241,7 @@ export default function Cart({ onCheckoutSuccess }) {
         exclusive
         onChange={handlePaymentMethodChange}
         fullWidth
-        sx={{ mb: 2 }}
+        sx={{ mb: 2, flexShrink: 0 }}
       >
         <ToggleButton 
           value="cash" 
@@ -274,9 +284,9 @@ export default function Cart({ onCheckoutSuccess }) {
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {/* Tender Amount & Change - Improved KES badge */}
+      {/* Tender Amount & Change - Always Visible */}
       {paymentMethod === 'cash' && (
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, flexShrink: 0 }}>
           <Typography variant="subtitle2" gutterBottom>
             Tender Amount
           </Typography>
@@ -317,8 +327,14 @@ export default function Cart({ onCheckoutSuccess }) {
         </Box>
       )}
 
-      {/* Checkout Buttons */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {/* Checkout Buttons - Always at Bottom */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 1,
+        flexShrink: 0,
+        mt: 'auto',
+      }}>
         <Button
           variant="contained"
           fullWidth
