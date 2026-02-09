@@ -111,7 +111,6 @@ export default function Cart({ onCheckoutSuccess }) {
     return (
       <Paper elevation={3} sx={{ 
         p: 3, 
-        height: '100%',
         display: 'flex', 
         flexDirection: 'column', 
         justifyContent: 'center', 
