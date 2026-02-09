@@ -156,7 +156,7 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Calculate cart styles
+  // Calculate cart styles - KEEP THE ORIGINAL CART SIZE
   const getCartStyles = () => {
     if (isMobile) {
       return {
@@ -173,13 +173,13 @@ export default function POSPage() {
         overflow: 'hidden',
       };
     } else {
-      // For desktop and tablet - make cart slightly wider
+      // Keep the cart at original size: 35% for tablet, 30% for desktop
       return {
         position: 'fixed',
         right: 16,
         top: 100,
         height: 'calc(100vh - 116px)',
-        width: isTablet ? '40%' : '35%', // Increased from 35%/30%
+        width: isTablet ? '35%' : '30%',
         zIndex: 1000,
         overflowY: 'auto',
         boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
@@ -250,8 +250,8 @@ export default function POSPage() {
           display: 'flex',
           flexDirection: 'column',
           ml: 2,
-          // FIXED: Increased margin to create more space between products and cart
-          mr: isMobile ? 2 : (isTablet ? 'calc(45% + 16px)' : 'calc(40% + 16px)'),
+          // FIX: Reduce products section width slightly more to eliminate overlap
+          mr: isMobile ? 2 : (isTablet ? 'calc(38% + 20px)' : 'calc(33% + 20px)'),
           overflow: 'hidden',
           minWidth: 0,
         }}>
@@ -513,7 +513,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart - Fixed Position */}
+        {/* Cart - Fixed Position (KEEP ORIGINAL SIZE) */}
         <Box sx={getCartStyles()}>
           <Box sx={{ 
             height: '100%', 
