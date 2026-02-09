@@ -173,7 +173,7 @@ export default function POSPage() {
         overflow: 'hidden',
       };
     } else {
-      // For desktop and tablet - use slightly wider cart
+      // For desktop and tablet
       return {
         position: 'fixed',
         right: 16,
@@ -241,6 +241,7 @@ export default function POSPage() {
         minHeight: 0,
         position: 'relative',
         mt: 2,
+        overflow: 'hidden',
       }}>
         {/* Products Section - Takes remaining width */}
         <Box sx={{ 
@@ -249,12 +250,20 @@ export default function POSPage() {
           display: 'flex',
           flexDirection: 'column',
           ml: 2,
-          // Key fix: Add right margin equal to cart width plus some spacing
-          mr: isMobile ? 2 : (isTablet ? 'calc(35% + 16px)' : 'calc(30% + 16px)'),
+          // FIX: Add right margin to prevent ALL content from overlapping
+          mr: isMobile ? 2 : (isTablet ? 'calc(35% + 24px)' : 'calc(30% + 24px)'),
           overflow: 'hidden',
+          minWidth: 0, // CRITICAL: Allows flex item to shrink below content size
         }}>
           {/* Search and Quick Actions */}
-          <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
+          <Paper elevation={1} sx={{ 
+            p: 2, 
+            mb: 2, 
+            borderRadius: 2, 
+            flexShrink: 0,
+            width: '100%',
+            boxSizing: 'border-box',
+          }}>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={7}>
                 <TextField
@@ -302,7 +311,14 @@ export default function POSPage() {
           </Paper>
 
           {/* Categories */}
-          <Paper elevation={1} sx={{ p: 1, mb: 2, borderRadius: 2, flexShrink: 0 }}>
+          <Paper elevation={1} sx={{ 
+            p: 1, 
+            mb: 2, 
+            borderRadius: 2, 
+            flexShrink: 0,
+            width: '100%',
+            boxSizing: 'border-box',
+          }}>
             {loadingCategories ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
                 <CircularProgress size={20} />
@@ -339,6 +355,10 @@ export default function POSPage() {
               overflow: 'auto',
               bgcolor: 'grey.50',
               minHeight: 0,
+              // CRITICAL FIXES: Constrain the product grid
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           >
             {loading ? (
@@ -346,7 +366,17 @@ export default function POSPage() {
                 <CircularProgress />
               </Box>
             ) : filteredProducts.length > 0 ? (
-              <Grid container spacing={1.5}>
+              <Grid 
+                container 
+                spacing={1.5}
+                sx={{
+                  // CRITICAL: Force grid to wrap within container
+                  width: '100%',
+                  margin: 0,
+                  // Ensure grid items wrap properly
+                  flexWrap: 'wrap',
+                }}
+              >
                 {filteredProducts.map((product) => (
                   <Grid item 
                     xs={6} 
@@ -354,6 +384,11 @@ export default function POSPage() {
                     md={4} 
                     lg={3} 
                     key={product.id}
+                    sx={{
+                      // Ensure grid items respect container bounds
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                    }}
                   >
                     <Paper
                       elevation={0}
@@ -376,6 +411,9 @@ export default function POSPage() {
                           bgcolor: 'background.paper',
                         },
                         position: 'relative',
+                        // Ensure product cards don't overflow
+                        width: '100%',
+                        boxSizing: 'border-box',
                       }}
                       onClick={() => handleProductClick(product)}
                     >
