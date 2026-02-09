@@ -156,13 +156,11 @@ export default function POSPage() {
     <Box sx={{ 
       display: 'flex', 
       flexDirection: 'column', 
-      height: '100%', 
-      minHeight: '100vh',
-      maxHeight: '100vh',
+      height: '100vh',
       overflow: 'hidden'
     }}>
-      {/* Header */}
-      <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+      {/* Header - Fixed at top */}
+      <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="h5" fontWeight="bold">
@@ -188,17 +186,17 @@ export default function POSPage() {
       </Paper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }}>
           {error}
         </Alert>
       )}
 
-      {/* Main Content - Fixed layout */}
+      {/* Main Content - Products scrolls, Cart fixed */}
       <Grid container spacing={2} sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {/* Left Panel - Products (70% on desktop, full on mobile) */}
+        {/* Left Panel - Products (scrollable) */}
         <Grid item xs={12} md={8} lg={9} sx={{ height: '100%', overflow: 'hidden' }}>
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            {/* Search and Quick Actions */}
+            {/* Search and Quick Actions - Fixed */}
             <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 2, flexShrink: 0 }}>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} md={7}>
@@ -246,7 +244,7 @@ export default function POSPage() {
               </Grid>
             </Paper>
 
-            {/* Categories */}
+            {/* Categories - Fixed */}
             <Paper elevation={1} sx={{ p: 1, mb: 2, borderRadius: 2, flexShrink: 0 }}>
               {loadingCategories ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
@@ -274,7 +272,7 @@ export default function POSPage() {
               )}
             </Paper>
 
-            {/* Product Grid */}
+            {/* Product Grid - Scrollable content */}
             <Paper 
               elevation={1} 
               sx={{ 
@@ -420,15 +418,21 @@ export default function POSPage() {
           </Box>
         </Grid>
 
-        {/* Right Panel - Cart (30% on desktop, below on mobile) */}
-        <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflow: 'hidden' }}>
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {/* Right Panel - Cart (Fixed/Sticky sidebar) */}
+        <Grid item xs={12} md={4} lg={3} sx={{ 
+          position: 'sticky',
+          top: 0,
+          height: 'calc(100vh - 100px)', // Adjust based on header height
+          overflowY: 'auto',
+          pt: 0
+        }}>
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Cart onCheckoutSuccess={handleCheckoutSuccess} />
           </Box>
         </Grid>
       </Grid>
 
-      {/* Bottom Status Bar */}
+      {/* Bottom Status Bar - Fixed at bottom */}
       <Paper elevation={2} sx={{ p: 1.5, mt: 2, borderRadius: 2, flexShrink: 0 }}>
         <Grid container alignItems="center" spacing={1}>
           <Grid item xs>
