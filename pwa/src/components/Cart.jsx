@@ -14,8 +14,6 @@ import {
   ToggleButton,
   InputAdornment,
   Chip,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -30,8 +28,6 @@ import { useAuthStore } from '../stores/authStore';
 export default function Cart({ onCheckoutSuccess }) {
   const { items, removeItem, updateQuantity, getSubtotal, clearCart } = useCartStore();
   const { business } = useAuthStore();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [tenderAmount, setTenderAmount] = useState('');
@@ -58,6 +54,7 @@ export default function Cart({ onCheckoutSuccess }) {
     }
   };
 
+  // Your existing checkout logic - unchanged
   const handleCheckout = async () => {
     if (items.length === 0) return;
     
@@ -109,338 +106,227 @@ export default function Cart({ onCheckoutSuccess }) {
 
   if (items.length === 0) {
     return (
-      <Paper elevation={3} sx={{ 
-        p: 3, 
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        borderRadius: 2
-      }}>
-        <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+      <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom color="primary">
           🛒 Cart Empty
         </Typography>
-        <Typography variant="body2" color="textSecondary" align="center">
+        <Typography variant="body2" color="textSecondary" paragraph>
           Add products from the products panel
         </Typography>
-        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-          <Chip 
-            label={navigator.onLine ? '🟢 Online' : '🟡 Offline'} 
-            size="small"
-            color={navigator.onLine ? 'success' : 'warning'}
-            variant="outlined"
-            sx={{ mr: 1 }}
-          />
-          <Typography variant="caption" color="textSecondary">
-            Ready to accept payments
-          </Typography>
-        </Box>
+        <Chip 
+          label={navigator.onLine ? '🟢 Online' : '🟡 Offline'} 
+          size="small"
+          color={navigator.onLine ? 'success' : 'default'}
+          variant="outlined"
+        />
       </Paper>
     );
   }
 
   return (
-    <Paper elevation={3} sx={{ 
-      p: isMobile ? 2 : 2.5, 
-      height: '100%',
-      display: 'flex', 
-      flexDirection: 'column',
-      borderRadius: 2
-    }}>
+    <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
       {/* Cart Header */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: isMobile ? 1.5 : 2 
-      }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box>
-          <Typography variant={isMobile ? "subtitle1" : "h6"} fontWeight="bold" color="primary">
-            Shopping Cart
+          <Typography variant="h6" fontWeight="bold" color="primary">
+            Order Summary
           </Typography>
-          <Typography variant="caption" color="textSecondary">
-            {items.reduce((sum, item) => sum + item.quantity, 0)} items • KES {subtotal.toFixed(2)}
+          <Typography variant="body2" color="textSecondary">
+            {items.length} {items.length === 1 ? 'item' : 'items'} in cart
           </Typography>
         </Box>
         <Chip 
-          label={navigator.onLine ? '🟢 Online' : '🟡 Offline'} 
-          size={isMobile ? "small" : "medium"}
-          color={navigator.onLine ? 'success' : 'warning'}
+          label={navigator.onLine ? 'Online' : 'Offline'} 
+          size="small"
+          color={navigator.onLine ? 'success' : 'default'}
           variant="outlined"
         />
       </Box>
       
-      {/* Cart Items List - Scrollable */}
-      <List sx={{ 
-        flex: 1, 
-        overflowY: 'auto',
-        mb: isMobile ? 1.5 : 2, 
-        bgcolor: 'grey.50', 
-        borderRadius: 1, 
-        p: 1,
-        '&::-webkit-scrollbar': { width: 6 },
-        '&::-webkit-scrollbar-track': { bgcolor: 'grey.100', borderRadius: 3 },
-        '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.400', borderRadius: 3 },
+      {/* Cart Items - Scrollable with fixed height */}
+      <Box sx={{ 
+        mb: 2, 
+        border: '1px solid', 
+        borderColor: 'grey.200', 
+        borderRadius: 1,
+        overflow: 'hidden'
       }}>
-        {items.map((item) => (
-          <ListItem
-            key={item.product.id}
-            sx={{
-              bgcolor: 'white',
-              mb: 1,
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'grey.200',
-              py: isMobile ? 1 : 1.5,
-              px: isMobile ? 1 : 1.5,
-              transition: 'all 0.2s',
-              '&:hover': {
-                borderColor: 'primary.light',
-                boxShadow: '0 2px 8px rgba(25, 118, 210, 0.1)',
-              },
-            }}
-            secondaryAction={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <IconButton
-                  size={isMobile ? "small" : "medium"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateQuantity(item.product.id, item.quantity - 1);
-                  }}
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'grey.300',
-                    width: isMobile ? 28 : 32,
-                    height: isMobile ? 28 : 32,
-                    bgcolor: 'white',
-                    '&:hover': { 
-                      bgcolor: 'grey.50',
-                      borderColor: 'grey.400'
-                    }
-                  }}
-                >
-                  <RemoveIcon fontSize={isMobile ? "small" : "medium"} />
-                </IconButton>
-                
-                <Typography component="span" sx={{ 
-                  mx: 1, 
-                  minWidth: isMobile ? 24 : 28, 
-                  textAlign: 'center', 
-                  fontWeight: 'bold',
-                  color: 'primary.main',
-                  fontSize: isMobile ? '0.875rem' : '1rem'
-                }}>
-                  {item.quantity}
-                </Typography>
-                
-                <IconButton
-                  size={isMobile ? "small" : "medium"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateQuantity(item.product.id, item.quantity + 1);
-                  }}
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'grey.300',
-                    width: isMobile ? 28 : 32,
-                    height: isMobile ? 28 : 32,
-                    bgcolor: 'white',
-                    '&:hover': { 
-                      bgcolor: 'grey.50',
-                      borderColor: 'grey.400'
-                    }
-                  }}
-                >
-                  <AddIcon fontSize={isMobile ? "small" : "medium"} />
-                </IconButton>
-                
-                <IconButton
-                  edge="end"
-                  size={isMobile ? "small" : "medium"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeItem(item.product.id);
-                  }}
-                  sx={{ 
-                    ml: 1,
-                    color: 'error.main',
-                    bgcolor: 'error.light',
-                    width: isMobile ? 28 : 32,
-                    height: isMobile ? 28 : 32,
-                    '&:hover': { 
-                      bgcolor: 'error.main',
-                      color: 'white'
-                    }
-                  }}
-                >
-                  <DeleteIcon fontSize={isMobile ? "small" : "medium"} />
-                </IconButton>
-              </Box>
-            }
-          >
-            <ListItemText
-              primary={
-                <Typography 
-                  variant={isMobile ? "body2" : "body1"} 
-                  fontWeight="medium"
-                  sx={{ 
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    pr: 2
-                  }}
-                >
-                  {item.product.name}
-                </Typography>
-              }
-              secondary={
-                <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
-                  <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
-                    KES {(Number(item.unitPrice) || 0).toFixed(2)}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">×</Typography>
-                  <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
-                    {item.quantity}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">=</Typography>
-                  <Typography 
-                    component="span" 
-                    fontWeight="bold" 
-                    color="primary" 
+        <List sx={{ 
+          maxHeight: 250, 
+          overflowY: 'auto',
+          p: 0,
+          '&::-webkit-scrollbar': { width: 6 },
+          '&::-webkit-scrollbar-track': { background: '#f1f1f1' },
+          '&::-webkit-scrollbar-thumb': { background: '#888', borderRadius: 3 },
+        }}>
+          {items.map((item) => (
+            <ListItem
+              key={item.product.id}
+              sx={{
+                borderBottom: '1px solid',
+                borderColor: 'grey.100',
+                py: 1.5,
+                '&:last-child': { borderBottom: 0 }
+              }}
+              secondaryAction={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                     sx={{ 
-                      ml: 0.5,
-                      fontSize: isMobile ? '0.875rem' : '1rem'
+                      border: '1px solid', 
+                      borderColor: 'grey.300',
+                      width: 30,
+                      height: 30,
                     }}
                   >
-                    KES {(Number(item.unitPrice) * item.quantity || 0).toFixed(2)}
+                    <RemoveIcon fontSize="small" />
+                  </IconButton>
+                  
+                  <Typography sx={{ 
+                    minWidth: 24, 
+                    textAlign: 'center', 
+                    fontWeight: 'bold',
+                    color: 'primary.main'
+                  }}>
+                    {item.quantity}
                   </Typography>
+                  
+                  <IconButton
+                    size="small"
+                    onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                    sx={{ 
+                      border: '1px solid', 
+                      borderColor: 'grey.300',
+                      width: 30,
+                      height: 30,
+                    }}
+                  >
+                    <AddIcon fontSize="small" />
+                  </IconButton>
                 </Box>
               }
-              sx={{ pr: isMobile ? 10 : 14 }}
-            />
-          </ListItem>
-        ))}
-      </List>
+            >
+              <ListItemText
+                primary={
+                  <Typography variant="body2" fontWeight="medium" noWrap sx={{ maxWidth: 150 }}>
+                    {item.product.name}
+                  </Typography>
+                }
+                secondary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <Typography variant="caption" color="textSecondary">
+                      KES {Number(item.unitPrice).toFixed(2)}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">×</Typography>
+                    <Typography variant="caption" color="textSecondary">{item.quantity}</Typography>
+                    <Typography variant="caption" color="textSecondary">=</Typography>
+                    <Typography variant="body2" fontWeight="bold" color="primary">
+                      KES {(Number(item.unitPrice) * item.quantity).toFixed(2)}
+                    </Typography>
+                  </Box>
+                }
+                sx={{ pr: 12 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => removeItem(item.product.id)}
+                sx={{ 
+                  ml: 1,
+                  color: 'error.main',
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
 
-      <Divider sx={{ my: isMobile ? 1.5 : 2 }} />
-      
       {/* Order Summary */}
-      <Box sx={{ mb: isMobile ? 2 : 3 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 1.5 
-        }}>
-          <Typography variant={isMobile ? "body2" : "body1"}>Subtotal:</Typography>
-          <Typography 
-            variant={isMobile ? "body2" : "body1"} 
-            fontWeight="bold"
-            sx={{ fontSize: isMobile ? '1rem' : '1.1rem' }}
-          >
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="body1">Subtotal:</Typography>
+          <Typography variant="body1" fontWeight="bold">
             KES {subtotal.toFixed(2)}
           </Typography>
         </Box>
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 2,
+          alignItems: 'center',
           p: 1.5,
-          bgcolor: 'primary.light',
+          bgcolor: 'primary.50',
           borderRadius: 1,
           border: '1px solid',
-          borderColor: 'primary.main'
+          borderColor: 'primary.100'
         }}>
-          <Typography variant={isMobile ? "subtitle1" : "h6"}>Total Amount:</Typography>
-          <Typography 
-            variant={isMobile ? "h6" : "h5"} 
-            fontWeight="bold" 
-            color="primary.dark"
-            sx={{ fontSize: isMobile ? '1.25rem' : '1.5rem' }}
-          >
+          <Typography variant="h6">Total:</Typography>
+          <Typography variant="h5" fontWeight="bold" color="primary">
             KES {totalAmount.toFixed(2)}
           </Typography>
         </Box>
       </Box>
 
+      <Divider sx={{ my: 2 }} />
+
       {/* Payment Method */}
-      <Typography 
-        variant={isMobile ? "body2" : "subtitle1"} 
-        fontWeight="medium" 
-        gutterBottom
-        sx={{ color: 'text.primary', mb: 1.5 }}
-      >
-        Select Payment Method
+      <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+        Payment Method
       </Typography>
       <ToggleButtonGroup
         value={paymentMethod}
         exclusive
         onChange={handlePaymentMethodChange}
         fullWidth
-        size={isMobile ? "small" : "medium"}
-        sx={{ mb: isMobile ? 2 : 3 }}
+        sx={{ mb: 2 }}
       >
         <ToggleButton 
           value="cash" 
           sx={{ 
-            py: isMobile ? 0.75 : 1,
-            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: 1,
             '&.Mui-selected': { 
               bgcolor: 'primary.main', 
               color: 'white',
-              '&:hover': { bgcolor: 'primary.dark' }
-            },
-            borderColor: 'grey.300'
+            }
           }}
         >
-          <AttachMoneyIcon sx={{ mr: 1, fontSize: isMobile ? 16 : 18 }} />
+          <AttachMoneyIcon sx={{ mr: 1 }} />
           Cash
         </ToggleButton>
         <ToggleButton 
           value="mobile_money" 
           sx={{ 
-            py: isMobile ? 0.75 : 1,
-            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: 1,
             '&.Mui-selected': { 
               bgcolor: 'secondary.main', 
               color: 'white',
-              '&:hover': { bgcolor: 'secondary.dark' }
-            },
-            borderColor: 'grey.300'
+            }
           }}
         >
-          <AccountBalanceWalletIcon sx={{ mr: 1, fontSize: isMobile ? 16 : 18 }} />
+          <AccountBalanceWalletIcon sx={{ mr: 1 }} />
           M-Pesa
         </ToggleButton>
         <ToggleButton 
           value="card" 
           sx={{ 
-            py: isMobile ? 0.75 : 1,
-            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: 1,
             '&.Mui-selected': { 
               bgcolor: 'success.main', 
               color: 'white',
-              '&:hover': { bgcolor: 'success.dark' }
-            },
-            borderColor: 'grey.300'
+            }
           }}
         >
-          <CreditCardIcon sx={{ mr: 1, fontSize: isMobile ? 16 : 18 }} />
+          <CreditCardIcon sx={{ mr: 1 }} />
           Card
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {/* Tender Amount & Change */}
+      {/* Tender Amount & Change - Only for Cash */}
       {paymentMethod === 'cash' && (
-        <Box sx={{ mb: isMobile ? 2 : 3 }}>
-          <Typography 
-            variant={isMobile ? "caption" : "subtitle2"} 
-            gutterBottom
-            fontWeight="medium"
-            sx={{ color: 'text.primary', mb: 1 }}
-          >
-            Enter Tender Amount
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom fontWeight="medium">
+            Tender Amount
           </Typography>
           <TextField
             fullWidth
@@ -452,14 +338,13 @@ export default function Cart({ onCheckoutSuccess }) {
               startAdornment: (
                 <InputAdornment position="start">
                   <Box sx={{ 
-                    bgcolor: 'primary.main', 
+                    bgcolor: 'grey.900', 
                     color: 'white', 
-                    p: isMobile ? '3px 8px' : '4px 12px', 
-                    borderRadius: 1,
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 0.5,
                     fontWeight: 'bold',
-                    fontSize: isMobile ? '0.75rem' : '0.875rem',
-                    minWidth: 45,
-                    textAlign: 'center'
+                    fontSize: '0.875rem'
                   }}>
                     KES
                   </Box>
@@ -467,16 +352,13 @@ export default function Cart({ onCheckoutSuccess }) {
               ),
               sx: { 
                 '& input': { 
-                  fontSize: isMobile ? '1rem' : '1.1rem', 
                   fontWeight: 'bold',
                   textAlign: 'right',
-                  paddingRight: 2
-                },
-                borderRadius: 1
+                  fontSize: '1.1rem'
+                }
               }
             }}
-            size={isMobile ? "small" : "medium"}
-            sx={{ mb: 1.5 }}
+            sx={{ mb: 1 }}
           />
           
           {changeAmount > 0 && (
@@ -484,48 +366,17 @@ export default function Cart({ onCheckoutSuccess }) {
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              p: isMobile ? 1 : 1.5,
-              bgcolor: 'success.light',
+              p: 1.5,
+              bgcolor: 'success.50',
               borderRadius: 1,
               border: '1px solid',
-              borderColor: 'success.main',
-              mb: 1
+              borderColor: 'success.200'
             }}>
-              <Typography 
-                variant={isMobile ? "caption" : "body2"} 
-                fontWeight="medium"
-                sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
-              >
+              <Typography variant="body2" fontWeight="medium">
                 Change Due:
               </Typography>
-              <Typography 
-                variant={isMobile ? "body2" : "body1"} 
-                fontWeight="bold" 
-                color="success.dark"
-                sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}
-              >
+              <Typography variant="body1" fontWeight="bold" color="success.main">
                 KES {changeAmount.toFixed(2)}
-              </Typography>
-            </Box>
-          )}
-          
-          {tenderAmount && parseFloat(tenderAmount) < totalAmount && (
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              p: isMobile ? 0.75 : 1,
-              bgcolor: 'error.light',
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'error.main'
-            }}>
-              <Typography 
-                variant={isMobile ? "caption" : "body2"} 
-                color="error.main" 
-                fontWeight="medium"
-                sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
-              >
-                ⚠️ Insufficient by KES {(totalAmount - parseFloat(tenderAmount)).toFixed(2)}
               </Typography>
             </Box>
           )}
@@ -533,28 +384,16 @@ export default function Cart({ onCheckoutSuccess }) {
       )}
 
       {/* Checkout Buttons */}
-      <Box sx={{ 
-        mt: 'auto', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: isMobile ? 1 : 1.5 
-      }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         <Button
           variant="contained"
           fullWidth
-          size={isMobile ? "medium" : "large"}
+          size="large"
           onClick={handleCheckout}
           sx={{ 
-            py: isMobile ? 1 : 1.5,
-            fontSize: isMobile ? '0.875rem' : '1rem',
+            py: 1.5,
             fontWeight: 'bold',
-            borderRadius: 2,
-            background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
-            boxShadow: '0 3px 5px 2px rgba(33, 150, 243, .3)',
-            '&:hover': { 
-              background: 'linear-gradient(45deg, #1565c0 30%, #1976d2 90%)',
-              boxShadow: '0 5px 8px 2px rgba(33, 150, 243, .4)'
-            }
+            fontSize: '1rem',
           }}
         >
           {navigator.onLine ? 'PROCESS SALE' : 'SAVE OFFLINE'}
@@ -563,21 +402,11 @@ export default function Cart({ onCheckoutSuccess }) {
         <Button
           variant="outlined"
           fullWidth
-          size={isMobile ? "medium" : "large"}
           onClick={clearCart}
           sx={{ 
-            py: isMobile ? 0.75 : 1,
-            fontSize: isMobile ? '0.875rem' : '0.9rem',
-            borderWidth: 2,
+            py: 1,
             borderColor: 'grey.400',
             color: 'text.secondary',
-            borderRadius: 2,
-            '&:hover': { 
-              borderWidth: 2,
-              borderColor: 'error.main',
-              color: 'error.main',
-              bgcolor: 'error.light'
-            }
           }}
         >
           Clear Cart
