@@ -156,7 +156,7 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Calculate cart styles - Keep original size
+  // Calculate cart styles
   const getCartStyles = () => {
     if (isMobile) {
       return {
@@ -242,133 +242,132 @@ export default function POSPage() {
         mt: 2,
         overflow: 'hidden',
       }}>
-        {/* Products Section - Takes remaining width */}
+        {/* Products Section */}
         <Box sx={{ 
           flex: 1,
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           ml: 2,
-          // FIX: Reduce width more aggressively
-          mr: isMobile ? 2 : (isTablet ? 'calc(40% + 24px)' : 'calc(35% + 24px)'),
+          mr: isMobile ? 2 : (isTablet ? 'calc(38% + 20px)' : 'calc(33% + 20px)'),
           overflow: 'hidden',
           minWidth: 0,
         }}>
-          {/* Search and Quick Actions - Make it more compact */}
-          <Paper elevation={1} sx={{ 
-            p: 2, 
-            mb: 2, 
-            borderRadius: 2, 
-            flexShrink: 0,
+          {/* Search and Quick Actions - MAKE THIS NARROWER */}
+          <Box sx={{ 
             width: '100%',
-            boxSizing: 'border-box',
+            display: 'flex',
+            justifyContent: 'center',
+            mb: 2,
           }}>
-            <Grid container spacing={1} alignItems="center">
-              <Grid item xs={12} md={8}>
-                <TextField
-                  fullWidth
-                  placeholder="Search products..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleBarcodeScan} size="small">
-                          <BarcodeIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  size="small"
-                  sx={{ fontSize: '0.875rem' }}
-                />
+            <Paper elevation={1} sx={{ 
+              p: 2, 
+              borderRadius: 2, 
+              flexShrink: 0,
+              // CRITICAL: Make search frame narrower
+              width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
+              boxSizing: 'border-box',
+            }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} md={7}>
+                  <TextField
+                    fullWidth
+                    placeholder="Search by name, SKU, or scan barcode..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={handleBarcodeScan} size="small">
+                            <BarcodeIcon />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    size="small"
+                  />
+                </Grid>
+                
+                <Grid item xs={12} md={5}>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
+                      Quick Qty:
+                    </Typography>
+                    {[1, 2, 5, 10].map((qty) => (
+                      <Chip
+                        key={qty}
+                        label={`+${qty}`}
+                        size="small"
+                        variant={quickQuantity === qty ? 'filled' : 'outlined'}
+                        color={quickQuantity === qty ? 'primary' : 'default'}
+                        onClick={() => setQuickQuantity(qty)}
+                        clickable
+                      />
+                    ))}
+                  </Box>
+                </Grid>
               </Grid>
-              
-              <Grid item xs={12} md={4}>
-                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Typography variant="caption" color="textSecondary" sx={{ mr: 0.5 }}>
-                    Qty:
-                  </Typography>
-                  {/* Reduce to only 2 options to save space */}
-                  {[1, 2].map((qty) => (
-                    <Chip
-                      key={qty}
-                      label={`+${qty}`}
-                      size="small"
-                      variant={quickQuantity === qty ? 'filled' : 'outlined'}
-                      color={quickQuantity === qty ? 'primary' : 'default'}
-                      onClick={() => setQuickQuantity(qty)}
-                      clickable
-                      sx={{ 
-                        fontSize: '0.7rem',
-                        height: 24,
-                        '& .MuiChip-label': { px: 1 }
-                      }}
+            </Paper>
+          </Box>
+
+          {/* Categories - MAKE THIS NARROWER */}
+          <Box sx={{ 
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            mb: 2,
+          }}>
+            <Paper elevation={1} sx={{ 
+              p: 1, 
+              borderRadius: 2, 
+              flexShrink: 0,
+              // CRITICAL: Make categories frame narrower
+              width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
+              boxSizing: 'border-box',
+            }}>
+              {loadingCategories ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+                  <CircularProgress size={20} />
+                </Box>
+              ) : (
+                <Tabs
+                  value={selectedCategory}
+                  onChange={(e, newValue) => setSelectedCategory(newValue)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{ minHeight: 40 }}
+                >
+                  {categories.map((cat) => (
+                    <Tab 
+                      key={cat.id}
+                      label={cat.name} 
+                      value={cat.id}
+                      icon={<CategoryIcon />}
+                      iconPosition="start"
+                      sx={{ minHeight: 40, py: 0.5, fontSize: '0.875rem' }}
                     />
                   ))}
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
+                </Tabs>
+              )}
+            </Paper>
+          </Box>
 
-          {/* Categories - Make tabs smaller */}
-          <Paper elevation={1} sx={{ 
-            p: 0.5, 
-            mb: 2, 
-            borderRadius: 2, 
-            flexShrink: 0,
-            width: '100%',
-            boxSizing: 'border-box',
-          }}>
-            {loadingCategories ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-                <CircularProgress size={20} />
-              </Box>
-            ) : (
-              <Tabs
-                value={selectedCategory}
-                onChange={(e, newValue) => setSelectedCategory(newValue)}
-                variant="scrollable"
-                scrollButtons="auto"
-                sx={{ minHeight: 36 }}
-              >
-                {categories.map((cat) => (
-                  <Tab 
-                    key={cat.id}
-                    label={cat.name} 
-                    value={cat.id}
-                    icon={<CategoryIcon fontSize="small" />}
-                    iconPosition="start"
-                    sx={{ 
-                      minHeight: 36, 
-                      py: 0.25, 
-                      fontSize: '0.8rem',
-                      minWidth: 'auto',
-                      px: 1.5,
-                    }}
-                  />
-                ))}
-              </Tabs>
-            )}
-          </Paper>
-
-          {/* Product Grid - Make product cards narrower */}
+          {/* Product Grid - This stays full width */}
           <Paper 
             elevation={1} 
             sx={{ 
               flex: 1,
-              p: 1.5, 
+              p: 2, 
               borderRadius: 2,
               overflow: 'auto',
               bgcolor: 'grey.50',
               minHeight: 0,
               width: '100%',
-              maxWidth: '100%',
               boxSizing: 'border-box',
             }}
           >
@@ -377,38 +376,26 @@ export default function POSPage() {
                 <CircularProgress />
               </Box>
             ) : filteredProducts.length > 0 ? (
-              <Grid 
-                container 
-                spacing={1}
-                sx={{
-                  width: '100%',
-                  margin: 0,
-                  flexWrap: 'wrap',
-                }}
-              >
+              <Grid container spacing={1.5}>
                 {filteredProducts.map((product) => (
                   <Grid item 
                     xs={6} 
                     sm={4} 
-                    md={3}  // Changed from 4 to 3 - makes cards narrower
-                    lg={2}  // Changed from 3 to 2 - makes cards narrower on large screens
+                    md={4} 
+                    lg={3} 
                     key={product.id}
-                    sx={{
-                      maxWidth: '100%',
-                      boxSizing: 'border-box',
-                    }}
                   >
                     <Paper
                       elevation={0}
                       sx={{
-                        p: 1,
+                        p: 1.5,
                         cursor: 'pointer',
                         border: `1px solid ${
                           product.current_stock <= 0 ? '#ff9800' :
                           product.current_stock <= product.minimum_stock ? '#f44336' : 
                           '#e0e0e0'
                         }`,
-                        borderRadius: 1.5,
+                        borderRadius: 2,
                         height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
@@ -419,40 +406,35 @@ export default function POSPage() {
                           bgcolor: 'background.paper',
                         },
                         position: 'relative',
-                        width: '100%',
-                        boxSizing: 'border-box',
                       }}
                       onClick={() => handleProductClick(product)}
                     >
-                      {/* Stock Badge - Smaller */}
+                      {/* Stock Badge */}
                       <Chip
                         label={getStockText(product)}
                         size="small"
                         color={getStockColor(product)}
                         sx={{ 
                           position: 'absolute', 
-                          top: 4, 
-                          right: 4,
-                          fontSize: '0.55rem',
-                          height: 18,
-                          '& .MuiChip-label': { px: 0.5 }
+                          top: 8, 
+                          right: 8,
+                          fontSize: '0.6rem',
+                          height: 20,
                         }}
                       />
 
-                      {/* Product Info - More compact */}
+                      {/* Product Info */}
                       <Typography 
                         variant="body2" 
                         fontWeight="medium"
                         sx={{ 
-                          mb: 0.25,
-                          lineHeight: 1.1,
-                          height: 28,
+                          mb: 0.5,
+                          lineHeight: 1.2,
+                          height: 32,
                           overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
-                          fontSize: '0.8rem',
-                          pr: 3, // Leave space for stock badge
                         }}
                       >
                         {product.name}
@@ -462,21 +444,21 @@ export default function POSPage() {
                         variant="caption" 
                         color="textSecondary" 
                         sx={{ 
-                          fontSize: '0.65rem',
-                          mb: 0.5,
+                          fontSize: '0.7rem',
+                          mb: 1,
                         }}
                       >
                         SKU: {product.sku}
                       </Typography>
 
-                      {/* Price and Actions - More compact */}
-                      <Box sx={{ mt: 'auto', pt: 0.5 }}>
-                        <Typography variant="body2" fontWeight="bold" color="primary" sx={{ fontSize: '0.9rem' }}>
+                      {/* Price and Actions */}
+                      <Box sx={{ mt: 'auto', pt: 1 }}>
+                        <Typography variant="body1" fontWeight="bold" color="primary">
                           KES {product.selling_price}
                         </Typography>
                         
-                        {/* Quick Actions - Smaller */}
-                        <Box sx={{ display: 'flex', gap: 0.25, mt: 0.5 }}>
+                        {/* Quick Actions */}
+                        <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
                           <IconButton
                             size="small"
                             onClick={(e) => {
@@ -485,9 +467,8 @@ export default function POSPage() {
                             }}
                             sx={{ 
                               bgcolor: 'grey.100',
-                              p: 0.25,
-                              minWidth: 24,
-                              height: 24,
+                              p: 0.5,
+                              minWidth: 30,
                               '&:hover': { bgcolor: 'grey.200' }
                             }}
                           >
@@ -502,9 +483,8 @@ export default function POSPage() {
                             }}
                             sx={{ 
                               bgcolor: 'grey.100',
-                              p: 0.25,
-                              minWidth: 24,
-                              height: 24,
+                              p: 0.5,
+                              minWidth: 30,
                               '&:hover': { bgcolor: 'grey.200' }
                             }}
                           >
@@ -530,7 +510,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart - Fixed Position (Keep original size) */}
+        {/* Cart - Fixed Position */}
         <Box sx={getCartStyles()}>
           <Box sx={{ 
             height: '100%', 
