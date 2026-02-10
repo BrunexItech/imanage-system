@@ -25,7 +25,7 @@ class NotificationService {
       const token = await this.getFCMToken();
       if (token) {
         console.log('FCM Token:', token);
-        // Send token to your backend
+        // Send token to your backend (silently fail if endpoint not ready)
         await this.registerToken(token);
       }
 
@@ -78,15 +78,27 @@ class NotificationService {
     }
   }
 
-  // Register token with backend
+  // Register token with backend (with graceful error handling)
   async registerToken(token) {
     try {
       // Send token to your Django backend
-      // You'll need to create this endpoint in your backend
       await ownerAPI.registerDeviceToken(token);
       console.log('Device token registered successfully');
     } catch (error) {
-      console.error('Failed to register token:', error);
+      // Handle 404 specifically (endpoint not yet implemented)
+      if (error.response?.status === 404) {
+        console.log('Notification endpoint not yet implemented. Continuing without token registration.');
+        return; // Don't throw error, just log and continue
+      }
+      
+      // Handle other errors
+      if (error.response?.status === 401) {
+        console.log('Unauthorized - user not logged in');
+      } else if (error.message?.includes('Network Error')) {
+        console.log('Network error - backend may be unreachable');
+      } else {
+        console.error('Failed to register token:', error.message);
+      }
     }
   }
 
@@ -163,6 +175,22 @@ class NotificationService {
         callback(notification);
       }
     });
+  }
+
+  // Test function to send a local notification
+  async sendTestNotification() {
+    try {
+      const response = await ownerAPI.sendNotification({
+        title: 'Test Notification',
+        message: 'This is a test notification from Imanage AI',
+        type: 'system'
+      });
+      console.log('Test notification sent:', response.data);
+      return true;
+    } catch (error) {
+      console.error('Failed to send test notification:', error);
+      return false;
+    }
   }
 
   // Cleanup
