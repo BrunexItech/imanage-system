@@ -11,13 +11,13 @@ import {
   Chip,
   Tabs,
   Tab,
-  Button,
   InputAdornment,
   Badge,
   useMediaQuery,
   useTheme,
-  SwipeableDrawer,
   Drawer,
+  AppBar,
+  Toolbar,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -25,8 +25,8 @@ import {
   Add as AddIcon,
   Remove as RemoveIcon,
   Category as CategoryIcon,
-  Receipt as ReceiptIcon,
   ShoppingCart as CartIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { useCartStore } from '../stores/cartStore';
 import { productAPI } from '../services/api';
@@ -120,7 +120,6 @@ export default function POSPage() {
 
   const handleProductClick = (product) => {
     addItem(product, quickQuantity);
-    // On mobile, open cart drawer after adding item
     if (isMobile) {
       setCartDrawerOpen(true);
     }
@@ -136,7 +135,7 @@ export default function POSPage() {
     } else {
       addItem(product, Math.max(1, increment));
     }
-    // On mobile, open cart drawer after quantity change
+    
     if (isMobile && increment > 0) {
       setCartDrawerOpen(true);
     }
@@ -149,7 +148,6 @@ export default function POSPage() {
 
   const handleCheckoutSuccess = () => {
     loadProducts();
-    // Close cart drawer on mobile after checkout
     if (isMobile) {
       setCartDrawerOpen(false);
     }
@@ -167,28 +165,7 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Calculate cart styles - ONLY FOR DESKTOP
-  const getCartStyles = () => {
-    // This function now ONLY applies to desktop/tablet
-    if (!isMobile) {
-      return {
-        position: 'fixed',
-        right: 16,
-        top: 100,
-        height: 'calc(100vh - 116px)',
-        width: isTablet ? '35%' : '30%',
-        zIndex: 1000,
-        overflowY: 'auto',
-        boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
-        borderRadius: 2,
-        // Add border as requested
-        border: '2px solid #1976d2', // Blue border, can change to gold: '#FFD700'
-      };
-    }
-    return {}; // Mobile will use drawer instead
-  };
-
-  // Cart toggle for mobile
+  // Toggle cart drawer for mobile
   const toggleCartDrawer = (open) => (event) => {
     if (
       event &&
@@ -202,23 +179,27 @@ export default function POSPage() {
 
   return (
     <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      height: '100vh',
-      position: 'relative',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      {/* Header - Fixed at top */}
+      {/* Header */}
       <Paper elevation={1} sx={{ 
-        p: 2, 
-        borderRadius: 2, 
+        p: { xs: 1.5, sm: 2 },
+        borderRadius: 2,
+        mb: 2,
         flexShrink: 0,
-        mx: 2,
-        mt: 2,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h5" fontWeight="bold">
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 1,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" fontWeight="bold">
               Point of Sale
             </Typography>
             <Chip 
@@ -230,136 +211,123 @@ export default function POSPage() {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Mobile Cart Toggle Button */}
-            {isMobile && (
+            {isMobile ? (
               <IconButton 
                 color="primary" 
                 onClick={() => setCartDrawerOpen(true)}
                 sx={{ 
-                  position: 'relative',
                   border: '2px solid #1976d2',
                   borderRadius: 2,
                   p: 1,
-                  mr: 1,
                 }}
               >
                 <Badge badgeContent={getTotalItems()} color="primary">
                   <CartIcon />
                 </Badge>
               </IconButton>
+            ) : (
+              <>
+                <Badge badgeContent={getTotalItems()} color="primary" sx={{ mr: 1 }}>
+                  <CartIcon color="action" />
+                </Badge>
+                <Typography variant="body2" color="textSecondary">
+                  {getTotalItems()} items
+                </Typography>
+              </>
             )}
-            
-            <Badge badgeContent={getTotalItems()} color="primary">
-              <ReceiptIcon color="action" />
-            </Badge>
-            <Typography variant="body2" color="textSecondary">
-              {getTotalItems()} items in cart
-            </Typography>
           </Box>
         </Box>
       </Paper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2, flexShrink: 0, mx: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }}>
           {error}
         </Alert>
       )}
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Responsive Grid */}
       <Box sx={{ 
-        display: 'flex',
         flex: 1,
-        minHeight: 0,
-        position: 'relative',
-        mt: 2,
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: { xs: 2, md: 3 },
         overflow: 'hidden',
+        minHeight: 0,
       }}>
-        {/* Products Section */}
+        {/* Products Section - Takes available space */}
         <Box sx={{ 
           flex: 1,
-          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
-          ml: 2,
-          // Desktop/Tablet margin for cart - UNCHANGED
-          mr: isMobile ? 2 : (isTablet ? 'calc(38% + 20px)' : 'calc(33% + 20px)'),
           overflow: 'hidden',
           minWidth: 0,
         }}>
-          {/* Search and Quick Actions */}
-          <Box sx={{ 
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
+          {/* Search Bar */}
+          <Paper elevation={1} sx={{ 
+            p: 2,
+            borderRadius: 2,
             mb: 2,
           }}>
-            <Paper elevation={1} sx={{ 
-              p: 2, 
-              borderRadius: 2, 
-              flexShrink: 0,
-              width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
-              boxSizing: 'border-box',
-            }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={7}>
-                  <TextField
-                    fullWidth
-                    placeholder="Search by name, SKU, or scan barcode..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={handleBarcodeScan} size="small">
-                            <BarcodeIcon />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                    size="small"
-                  />
-                </Grid>
-                
-                <Grid item xs={12} md={5}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
-                      Quick Qty:
-                    </Typography>
-                    {[1, 2, 5, 10].map((qty) => (
-                      <Chip
-                        key={qty}
-                        label={`+${qty}`}
-                        size="small"
-                        variant={quickQuantity === qty ? 'filled' : 'outlined'}
-                        color={quickQuantity === qty ? 'primary' : 'default'}
-                        onClick={() => setQuickQuantity(qty)}
-                        clickable
-                      />
-                    ))}
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+            <TextField
+              fullWidth
+              placeholder="Search by name, SKU, or scan barcode..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleBarcodeScan} size="small">
+                      <BarcodeIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              size="small"
+            />
+          </Paper>
 
-          {/* Categories */}
+          {/* Quick Quantity and Categories */}
           <Box sx={{ 
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
             mb: 2,
           }}>
+            {/* Quick Quantity */}
             <Paper elevation={1} sx={{ 
-              p: 1, 
-              borderRadius: 2, 
-              flexShrink: 0,
-              width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
-              boxSizing: 'border-box',
+              p: 1.5,
+              borderRadius: 2,
+              flex: { xs: 1, sm: 'none' },
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
+                  Quick Qty:
+                </Typography>
+                {[1, 2, 5, 10].map((qty) => (
+                  <Chip
+                    key={qty}
+                    label={`+${qty}`}
+                    size="small"
+                    variant={quickQuantity === qty ? 'filled' : 'outlined'}
+                    color={quickQuantity === qty ? 'primary' : 'default'}
+                    onClick={() => setQuickQuantity(qty)}
+                    clickable
+                  />
+                ))}
+              </Box>
+            </Paper>
+
+            {/* Categories */}
+            <Paper elevation={1} sx={{ 
+              p: 0.5,
+              borderRadius: 2,
+              flex: 1,
+              minWidth: 0,
             }}>
               {loadingCategories ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
@@ -376,11 +344,17 @@ export default function POSPage() {
                   {categories.map((cat) => (
                     <Tab 
                       key={cat.id}
-                      label={cat.name} 
+                      label={cat.name}
                       value={cat.id}
                       icon={<CategoryIcon />}
                       iconPosition="start"
-                      sx={{ minHeight: 40, py: 0.5, fontSize: '0.875rem' }}
+                      sx={{ 
+                        minHeight: 40, 
+                        py: 0.5, 
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        minWidth: 'auto',
+                        px: 1,
+                      }}
                     />
                   ))}
                 </Tabs>
@@ -388,32 +362,36 @@ export default function POSPage() {
             </Paper>
           </Box>
 
-          {/* Product Grid */}
+          {/* Products Grid */}
           <Paper 
-            elevation={1} 
-            sx={{ 
+            elevation={1}
+            sx={{
               flex: 1,
-              p: 2, 
+              p: 2,
               borderRadius: 2,
               overflow: 'auto',
               bgcolor: 'grey.50',
               minHeight: 0,
-              width: '100%',
-              boxSizing: 'border-box',
             }}
           >
             {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100%' 
+              }}>
                 <CircularProgress />
               </Box>
             ) : filteredProducts.length > 0 ? (
               <Grid container spacing={1.5}>
                 {filteredProducts.map((product) => (
                   <Grid item 
-                    xs={6} 
-                    sm={4} 
-                    md={4} 
-                    lg={3} 
+                    xs={6}
+                    sm={4}
+                    md={4}
+                    lg={3}
+                    xl={2}
                     key={product.id}
                   >
                     <Paper
@@ -461,11 +439,12 @@ export default function POSPage() {
                         sx={{ 
                           mb: 0.5,
                           lineHeight: 1.2,
-                          height: 32,
+                          minHeight: 32,
                           overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
                         }}
                       >
                         {product.name}
@@ -484,7 +463,12 @@ export default function POSPage() {
 
                       {/* Price and Actions */}
                       <Box sx={{ mt: 'auto', pt: 1 }}>
-                        <Typography variant="body1" fontWeight="bold" color="primary">
+                        <Typography 
+                          variant="body1" 
+                          fontWeight="bold" 
+                          color="primary"
+                          sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                        >
                           KES {product.selling_price}
                         </Typography>
                         
@@ -541,73 +525,90 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Desktop Cart - Fixed Position (UNCHANGED) */}
+        {/* Cart Section - Desktop */}
         {!isMobile && (
-          <Box sx={getCartStyles()}>
+          <Box sx={{
+            width: { md: '35%', lg: '30%', xl: '25%' },
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+            overflow: 'hidden',
+          }}>
+            <Paper
+              elevation={1}
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: 2,
+                border: '2px solid #1976d2',
+                overflow: 'hidden',
+                minHeight: 0,
+              }}
+            >
+              <Box sx={{ 
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+              }}>
+                <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+              </Box>
+            </Paper>
+          </Box>
+        )}
+      </Box>
+
+      {/* Mobile Cart Drawer */}
+      {isMobile && (
+        <Drawer
+          anchor="bottom"
+          open={cartDrawerOpen}
+          onClose={toggleCartDrawer(false)}
+          PaperProps={{
+            sx: {
+              height: '85%',
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderTop: '3px solid #1976d2',
+              overflow: 'hidden',
+            }
+          }}
+        >
+          <Box sx={{ 
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}>
+            {/* Drawer Header */}
             <Box sx={{ 
-              height: '100%', 
-              display: 'flex', 
-              flexDirection: 'column',
+              p: 2,
+              borderBottom: '1px solid #e0e0e0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              bgcolor: 'background.paper',
+            }}>
+              <Typography variant="h6" fontWeight="bold">
+                Shopping Cart ({getTotalItems()} items)
+              </Typography>
+              <IconButton onClick={() => setCartDrawerOpen(false)} size="small">
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            
+            {/* Cart Content */}
+            <Box sx={{ 
+              flex: 1,
+              overflow: 'auto',
+              minHeight: 0,
             }}>
               <Cart onCheckoutSuccess={handleCheckoutSuccess} />
             </Box>
           </Box>
-        )}
-
-        {/* Mobile Cart Drawer */}
-        {isMobile && (
-          <Drawer
-            anchor="right"
-            open={cartDrawerOpen}
-            onClose={toggleCartDrawer(false)}
-            PaperProps={{
-              sx: {
-                width: '100%',
-                maxWidth: '100%',
-                height: '100%',
-                borderLeft: '3px solid #1976d2', // Blue border, can change to '#FFD700' for gold
-                boxShadow: '-5px 0px 15px rgba(0,0,0,0.3)',
-                '& .MuiPaper-root': {
-                  borderRadius: 0,
-                }
-              }
-            }}
-          >
-            <Box sx={{ 
-              height: '100%', 
-              display: 'flex', 
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}>
-              {/* Drawer Header */}
-              <Box sx={{ 
-                p: 2, 
-                borderBottom: '1px solid #e0e0e0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                bgcolor: '#f5f5f5',
-              }}>
-                <Typography variant="h6" fontWeight="bold">
-                  Shopping Cart ({getTotalItems()} items)
-                </Typography>
-                <IconButton onClick={() => setCartDrawerOpen(false)}>
-                  <RemoveIcon />
-                </IconButton>
-              </Box>
-              
-              {/* Cart Content - Full Height */}
-              <Box sx={{ 
-                flex: 1,
-                overflow: 'auto',
-                height: '100%',
-              }}>
-                <Cart onCheckoutSuccess={handleCheckoutSuccess} />
-              </Box>
-            </Box>
-          </Drawer>
-        )}
-      </Box>
+        </Drawer>
+      )}
     </Box>
   );
 }
