@@ -8,10 +8,12 @@ import {
   Alert,
   TouchableOpacity,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { ownerAPI, webSocketService } from '../services/api';
-import notificationService from '../services/notificationService'; // Import notification service
+import notificationService from '../services/notificationService';
 import { LineChart, PieChart } from 'react-native-chart-kit';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const DashboardScreen = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -22,6 +24,8 @@ const DashboardScreen = () => {
   const [expenseData, setExpenseData] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notificationPermission, setNotificationPermission] = useState(false);
+  const [webSocketStatus, setWebSocketStatus] = useState('disconnected');
+  const [liveSalePulse, setLiveSalePulse] = useState(new Animated.Value(0));
   const wsRef = useRef(null);
 
   const screenWidth = Dimensions.get('window').width;
@@ -37,10 +41,27 @@ const DashboardScreen = () => {
       if (wsRef.current) {
         wsRef.current.disconnect();
       }
-      // Cleanup notification service
       notificationService.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    // Pulse animation for new sales
+    if (liveSales.length > 0) {
+      Animated.sequence([
+        Animated.timing(liveSalePulse, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(liveSalePulse, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [liveSales.length]);
 
   const initializeNotifications = async () => {
     try {
@@ -48,43 +69,10 @@ const DashboardScreen = () => {
       setNotificationPermission(initialized);
       
       if (initialized) {
-        // Subscribe to notifications
         const unsubscribe = notificationService.subscribe((notification) => {
-          console.log('Received notification:', notification);
-          
-          // Handle notification based on type
-          if (notification.data?.type === 'sale') {
-            // Add to live sales
-            const newSale = {
-              receipt_number: notification.data.receipt_number || 'N/A',
-              total_amount: notification.data.amount || '0',
-              created_at: notification.data.timestamp || new Date().toISOString(),
-            };
-            setLiveSales(prev => [newSale, ...prev.slice(0, 9)]);
-            
-            // Refresh dashboard for updated stats
-            setTimeout(() => {
-              loadDashboard();
-            }, 1000);
-          }
-          
-          // Show alert for important notifications
-          if (notification.notification && notification.data?.type !== 'sale') {
-            Alert.alert(
-              notification.notification.title || 'Imanage AI',
-              notification.notification.body || 'New notification',
-              [
-                { text: 'OK', onPress: () => {} },
-                { 
-                  text: 'View Details', 
-                  onPress: () => handleNotificationAction(notification.data) 
-                }
-              ]
-            );
-          }
+          handleIncomingNotification(notification);
         });
         
-        // Get initial unread count
         try {
           const response = await ownerAPI.getAiSummaries();
           setUnreadNotifications(response.data.unread_notifications || 0);
@@ -100,62 +88,90 @@ const DashboardScreen = () => {
     }
   };
 
-  const handleNotificationAction = (data) => {
-    if (!data) return;
+  const handleIncomingNotification = (notification) => {
+    if (notification.data?.type === 'sale') {
+      const newSale = {
+        receipt_number: notification.data.receipt_number || 'N/A',
+        total_amount: notification.data.amount || '0',
+        created_at: notification.data.timestamp || new Date().toISOString(),
+        is_new: true, // Flag for animation
+      };
+      
+      // Add to live sales with animation flag
+      setLiveSales(prev => {
+        const updated = [newSale, ...prev.slice(0, 8)];
+        return updated;
+      });
+      
+      // Refresh dashboard after 1 second
+      setTimeout(() => {
+        loadDashboard();
+      }, 1000);
+    }
     
-    const { type, sale_id, product_id, summary_id } = data;
-    
-    switch (type) {
-      case 'sale':
-        Alert.alert(
-          'Sale Details',
-          `Receipt: ${data.receipt_number || 'N/A'}\nAmount: KES ${data.amount || '0'}`,
-          [{ text: 'OK' }]
-        );
-        break;
-      case 'stock':
-        Alert.alert(
-          'Low Stock Alert',
-          `Product: ${data.product_name || 'Unknown'}\nCurrent Stock: ${data.current_stock || '0'}`,
-          [{ text: 'OK' }]
-        );
-        break;
-      case 'summary':
-        Alert.alert(
-          'AI Summary Ready',
-          'Your daily AI business summary is ready to view.',
-          [{ text: 'OK' }]
-        );
-        loadAiSummaries(); // Refresh summaries
-        break;
-      default:
-        console.log('Unknown notification type:', type);
+    // Show alert for important notifications
+    if (notification.notification && notification.data?.type !== 'sale') {
+      Alert.alert(
+        notification.notification.title || 'Imanage AI',
+        notification.notification.body || 'New notification',
+        [
+          { text: 'OK', onPress: () => {} },
+          { 
+            text: 'View Details', 
+            onPress: () => handleNotificationAction(notification.data) 
+          }
+        ]
+      );
     }
   };
 
   const setupWebSocket = () => {
-    const businessId = 1; // Replace with actual business ID
+    const businessId = 1;
+    
+    setWebSocketStatus('connecting');
     
     wsRef.current = webSocketService.connect(
       businessId,
       (data) => {
         console.log('WebSocket message:', data);
+        setWebSocketStatus('connected');
+        
         if (data.type === 'new_sale') {
-          setLiveSales(prev => [data.sale, ...prev.slice(0, 9)]);
+          // Add new sale with animation flag
+          const animatedSale = {
+            ...data.sale,
+            is_new: true,
+            animated: true,
+          };
+          
+          setLiveSales(prev => {
+            const updated = [animatedSale, ...prev.slice(0, 8)];
+            return updated;
+          });
+          
           loadDashboard();
           
-          // If notifications are enabled, show a subtle alert
-          if (notificationPermission) {
-            Alert.alert(
-              '💰 New Sale',
-              `Receipt #${data.sale.receipt_number}: KES ${data.sale.total_amount}`,
-              [{ text: 'OK' }]
-            );
-          }
+          // Auto-clear new flag after 3 seconds
+          setTimeout(() => {
+            setLiveSales(prev => prev.map(sale => ({
+              ...sale,
+              is_new: false,
+              animated: false,
+            })));
+          }, 3000);
         }
       },
       (error) => {
         console.error('WebSocket error:', error);
+        setWebSocketStatus('disconnected');
+        
+        // Attempt reconnect after 5 seconds
+        setTimeout(() => {
+          if (wsRef.current) {
+            wsRef.current.disconnect();
+            setupWebSocket();
+          }
+        }, 5000);
       }
     );
   };
@@ -166,8 +182,6 @@ const DashboardScreen = () => {
       const response = await ownerAPI.getDashboard();
       setDashboardData(response.data);
       
-      // Simulate expense categories for pie chart
-      // In production, get this from your backend
       const simulatedExpenses = [
         { name: 'Supplies', amount: response.data.today_expenses * 0.4, color: '#FF6B6B', legendFontColor: '#7F7F7F' },
         { name: 'Utilities', amount: response.data.today_expenses * 0.3, color: '#4ECDC4', legendFontColor: '#7F7F7F' },
@@ -220,10 +234,7 @@ const DashboardScreen = () => {
     if (last3Days.length < 2) return 0;
     
     const total = last3Days.reduce((sum, day) => sum + (parseFloat(day.total) || 0), 0);
-    const avg = total / last3Days.length;
-    
-    // Simple prediction: average of last 3 days
-    return avg;
+    return total / last3Days.length;
   };
 
   const handleNotificationSettings = () => {
@@ -247,10 +258,25 @@ const DashboardScreen = () => {
     );
   };
 
+  const getWebSocketStatusIcon = () => {
+    switch (webSocketStatus) {
+      case 'connected': return { icon: '🌐', color: '#4CAF50', text: 'Live' };
+      case 'connecting': return { icon: '🔄', color: '#FF9800', text: 'Connecting' };
+      default: return { icon: '📡', color: '#F44336', text: 'Disconnected' };
+    }
+  };
+
+  const getSaleImpactLevel = (amount) => {
+    if (amount > 5000) return { level: 'high', label: 'MAJOR', color: '#4CAF50', icon: '💰' };
+    if (amount > 1000) return { level: 'medium', label: 'GOOD', color: '#2196F3', icon: '💵' };
+    return { level: 'normal', label: 'NORMAL', color: '#9C27B0', icon: '🛒' };
+  };
+
   if (!dashboardData) {
     return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <Icon name="trending-up" size={60} color="#1976d2" />
+        <Text style={styles.loadingText}>Loading Business Intelligence...</Text>
       </View>
     );
   }
@@ -264,7 +290,7 @@ const DashboardScreen = () => {
     datasets: [{
       data: salesTrend.slice(-7).map(day => parseFloat(day.total) || 0),
       color: (opacity = 1) => `rgba(25, 118, 210, ${opacity})`,
-      strokeWidth: 2
+      strokeWidth: 3
     }]
   };
 
@@ -272,6 +298,16 @@ const DashboardScreen = () => {
   const profitMargin = dashboardData.today_sales > 0 
     ? ((dashboardData.today_profit / dashboardData.today_sales) * 100).toFixed(1)
     : 0;
+  
+  const wsStatus = getWebSocketStatusIcon();
+  const pulseAnimation = {
+    transform: [{
+      scale: liveSalePulse.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 1.1]
+      })
+    }]
+  };
 
   return (
     <ScrollView
@@ -280,96 +316,159 @@ const DashboardScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={loadDashboard} />
       }
     >
-      {/* Header with Notification Badge */}
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
+        <View style={styles.headerMain}>
           <View>
             <Text style={styles.title}>Imanage AI Dashboard</Text>
-            <Text style={styles.subtitle}>AI-Powered Business Intelligence</Text>
+            <Text style={styles.subtitle}>Real-time Business Intelligence</Text>
           </View>
           
-          <TouchableOpacity 
-            onPress={handleNotificationSettings}
-            style={styles.notificationButton}
-          >
-            <View style={styles.notificationBadge}>
-              <Text style={styles.bellIcon}>🔔</Text>
-              {unreadNotifications > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </Text>
-                </View>
-              )}
+          <View style={styles.headerControls}>
+            <TouchableOpacity 
+              onPress={handleNotificationSettings}
+              style={styles.notificationControl}
+            >
+              <View style={styles.badgeContainer}>
+                <Icon name="notifications" size={24} color="white" />
+                {unreadNotifications > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.controlStatus}>
+                {notificationPermission ? 'ON' : 'OFF'}
+              </Text>
+            </TouchableOpacity>
+            
+            <View style={[styles.wsStatus, { backgroundColor: wsStatus.color + '20' }]}>
+              <Text style={[styles.wsStatusText, { color: wsStatus.color }]}>
+                {wsStatus.icon} {wsStatus.text}
+              </Text>
             </View>
-            <Text style={styles.notificationStatus}>
-              {notificationPermission ? 'ON' : 'OFF'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.headerStatus}>
-          <Text style={styles.statusText}>
-            {notificationPermission ? '🔔 Notifications Active' : '🔕 Notifications Off'}
-          </Text>
-          <Text style={styles.statusText}>
-            {wsRef.current ? '🌐 Live Connected' : '📡 Connecting...'}
-          </Text>
+          </View>
         </View>
       </View>
 
-      {/* Real-time Stats Cards */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.statsScroll}
-      >
-        <View style={styles.statsContainer}>
-          <View style={[styles.statCard, styles.primaryCard]}>
-            <Text style={styles.statValue}>KES {dashboardData.today_sales.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Today's Revenue</Text>
-            {prediction > 0 && (
-              <Text style={styles.trendText}>
-                📈 Predicted: KES {prediction.toFixed(0)}
-              </Text>
-            )}
-          </View>
-          
-          <View style={[styles.statCard, styles.profitCard]}>
-            <Text style={[styles.statValue, dashboardData.today_profit > 0 ? styles.profitPositive : styles.profitNegative]}>
-              KES {dashboardData.today_profit.toLocaleString()}
-            </Text>
-            <Text style={styles.statLabel}>Today's Net Profit</Text>
-            <Text style={styles.marginText}>
-              Margin: {profitMargin}%
-            </Text>
-          </View>
-          
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{dashboardData.today_transactions}</Text>
-            <Text style={styles.statLabel}>Transactions</Text>
-            <Text style={styles.avgText}>
-              Avg: KES {(dashboardData.today_sales / dashboardData.today_transactions || 0).toFixed(0)}
-            </Text>
-          </View>
-          
-          <View style={[styles.statCard, dashboardData.low_stock_items > 0 ? styles.warningCard : styles.successCard]}>
-            <Text style={styles.statValue}>{dashboardData.low_stock_items}</Text>
-            <Text style={styles.statLabel}>Low Stock Items</Text>
-            {dashboardData.low_stock_items > 0 && (
-              <Text style={styles.alertText}>⚠️ Needs attention</Text>
-            )}
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Sales Trend Chart */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>7-Day Sales Trend</Text>
-          <Text style={styles.chartSubtitle}>Last 7 days performance</Text>
+      {/* Key Metrics Row */}
+      <View style={styles.metricsRow}>
+        <View style={styles.metricCard}>
+          <Text style={styles.metricValue}>KES {dashboardData.today_sales.toLocaleString()}</Text>
+          <Text style={styles.metricLabel}>Today's Revenue</Text>
+          {prediction > 0 && (
+            <View style={styles.trendIndicator}>
+              <Icon name="trending-up" size={12} color="#4CAF50" />
+              <Text style={styles.trendText}>KES {prediction.toFixed(0)} predicted</Text>
+            </View>
+          )}
         </View>
         
+        <View style={styles.metricCard}>
+          <Text style={[
+            styles.metricValue, 
+            dashboardData.today_profit > 0 ? styles.profitPositive : styles.profitNegative
+          ]}>
+            KES {dashboardData.today_profit.toLocaleString()}
+          </Text>
+          <Text style={styles.metricLabel}>Net Profit</Text>
+          <View style={styles.profitMargin}>
+            <Text style={styles.marginText}>{profitMargin}% margin</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Live Sales Section */}
+      <Animated.View style={[styles.liveSalesSection, pulseAnimation]}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <Icon name="flash-on" size={20} color="#FF9800" />
+            <Text style={styles.sectionTitle}>Live Sales Feed</Text>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity onPress={() => setLiveSales([])}>
+            <Text style={styles.clearText}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {liveSales.length > 0 ? (
+          <View style={styles.liveSalesContainer}>
+            {liveSales.slice(0, 5).map((sale, index) => {
+              const impact = getSaleImpactLevel(parseFloat(sale.total_amount));
+              const isNew = sale.is_new || sale.animated;
+              
+              return (
+                <Animated.View 
+                  key={`${sale.receipt_number}-${index}`}
+                  style={[
+                    styles.liveSaleCard,
+                    isNew && styles.newSaleCard,
+                    { borderLeftColor: impact.color }
+                  ]}
+                >
+                  <View style={styles.saleInfo}>
+                    <View>
+                      <View style={styles.saleHeader}>
+                        <Text style={styles.saleReceipt}>{sale.receipt_number}</Text>
+                        {isNew && (
+                          <View style={styles.newBadge}>
+                            <Text style={styles.newBadgeText}>NEW</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.saleTime}>
+                        {new Date(sale.created_at).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.saleAmountContainer}>
+                      <Text style={styles.saleAmount}>KES {sale.total_amount}</Text>
+                      <View style={[styles.impactTag, { backgroundColor: impact.color + '20' }]}>
+                        <Text style={[styles.impactText, { color: impact.color }]}>
+                          {impact.icon} {impact.label}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  
+                  {index === 0 && liveSales.length > 0 && (
+                    <View style={styles.latestSaleIndicator}>
+                      <Icon name="arrow-upward" size={14} color="#4CAF50" />
+                      <Text style={styles.latestSaleText}>Latest Sale</Text>
+                    </View>
+                  )}
+                </Animated.View>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.noSales}>
+            <Icon name="shopping-cart" size={40} color="#E0E0E0" />
+            <Text style={styles.noSalesText}>Waiting for sales...</Text>
+            <Text style={styles.noSalesSubtext}>Sales will appear here in real-time</Text>
+          </View>
+        )}
+        
+        <View style={styles.statsFooter}>
+          <Text style={styles.statsText}>
+            {liveSales.length} sales • {dashboardData.today_transactions} today • 
+            Avg: KES {(dashboardData.today_sales / dashboardData.today_transactions || 0).toFixed(0)}
+          </Text>
+        </View>
+      </Animated.View>
+
+      {/* Performance Charts */}
+      <View style={styles.chartsSection}>
+        <Text style={styles.sectionTitle}>7-Day Performance</Text>
         {salesTrend.length > 0 ? (
           <LineChart
             data={chartData}
@@ -396,26 +495,26 @@ const DashboardScreen = () => {
             formatYLabel={(value) => `KES${parseInt(value).toLocaleString()}`}
           />
         ) : (
-          <View style={styles.noData}>
-            <Text style={styles.noDataText}>No sales data available</Text>
+          <View style={styles.noChartData}>
+            <Text style={styles.noChartText}>No sales data available</Text>
           </View>
         )}
       </View>
 
-      {/* Enhanced AI Insights */}
-      <View style={styles.section}>
+      {/* AI Insights */}
+      <View style={styles.aiSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>AI Business Insights</Text>
-          <TouchableOpacity onPress={generateAiSummary} style={styles.generateButton}>
-            <Text style={styles.generateButtonText}>🔄 Generate</Text>
+          <TouchableOpacity onPress={generateAiSummary} style={styles.aiGenerateButton}>
+            <Icon name="auto-awesome" size={16} color="white" />
+            <Text style={styles.aiGenerateText}>Generate</Text>
           </TouchableOpacity>
         </View>
         
         {aiSummaries.length > 0 ? (
-          <View>
-            {/* Latest AI Summary */}
+          <View style={styles.aiInsights}>
             <View style={styles.aiMainCard}>
-              <View style={styles.aiHeader}>
+              <View style={styles.aiCardHeader}>
                 <Text style={styles.aiDate}>
                   {new Date(aiSummaries[0].date).toLocaleDateString('en-US', { 
                     weekday: 'long', 
@@ -424,12 +523,17 @@ const DashboardScreen = () => {
                     day: 'numeric' 
                   })}
                 </Text>
-                <View style={styles.aiStatus}>
-                  <View style={[
-                    styles.statusDot, 
-                    aiSummaries[0].insights?.profitability === 'good' ? styles.statusGood : styles.statusWarning
-                  ]} />
-                  <Text style={styles.statusText}>
+                <View style={[
+                  styles.aiStatus, 
+                  aiSummaries[0].insights?.profitability === 'good' ? 
+                    styles.statusGood : styles.statusWarning
+                ]}>
+                  <Icon 
+                    name={aiSummaries[0].insights?.profitability === 'good' ? 'check-circle' : 'warning'} 
+                    size={14} 
+                    color="white" 
+                  />
+                  <Text style={styles.aiStatusText}>
                     {aiSummaries[0].insights?.profitability === 'good' ? 'Profitable' : 'Needs Attention'}
                   </Text>
                 </View>
@@ -439,199 +543,83 @@ const DashboardScreen = () => {
                 {aiSummaries[0].ai_summary}
               </Text>
               
-              {/* Insights Metrics */}
-              <View style={styles.insightsMetrics}>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Sales Trend</Text>
-                  <Text style={[
-                    styles.metricValue,
-                    aiSummaries[0].insights?.sales_trend === 'increasing' ? styles.trendUp : styles.trendNeutral
-                  ]}>
-                    {aiSummaries[0].insights?.sales_trend === 'increasing' ? '📈 Up' : '↔️ Stable'}
-                  </Text>
-                </View>
-                
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Inventory</Text>
-                  <Text style={[
-                    styles.metricValue,
-                    aiSummaries[0].insights?.inventory_health === 'good' ? styles.statusGoodText : styles.statusWarningText
-                  ]}>
-                    {aiSummaries[0].insights?.inventory_health === 'good' ? '✅ Healthy' : '⚠️ Low'}
-                  </Text>
-                </View>
-                
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Expenses</Text>
-                  <Text style={[
-                    styles.metricValue,
-                    aiSummaries[0].insights?.expense_control === 'good' ? styles.statusGoodText : styles.statusWarningText
-                  ]}>
-                    {aiSummaries[0].insights?.expense_control === 'good' ? '✅ Controlled' : '⚠️ High'}
-                  </Text>
-                </View>
-              </View>
-              
-              {/* Recommendations */}
-              {aiSummaries[0].recommendations && aiSummaries[0].recommendations.length > 0 && (
-                <View style={styles.recommendations}>
-                  <Text style={styles.recommendationsTitle}>AI Recommendations:</Text>
-                  {aiSummaries[0].recommendations.slice(0, 3).map((rec, idx) => (
-                    <View key={idx} style={styles.recommendationItem}>
-                      <Text style={styles.bullet}>•</Text>
-                      <Text style={styles.recommendationText}>{rec}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-              
               <TouchableOpacity 
                 onPress={() => Alert.alert('Full AI Analysis', aiSummaries[0].ai_summary)}
                 style={styles.readMoreButton}
               >
-                <Text style={styles.readMoreText}>View Full Analysis →</Text>
+                <Text style={styles.readMoreText}>Read Full Analysis</Text>
+                <Icon name="arrow-forward" size={16} color="#1976d2" />
               </TouchableOpacity>
             </View>
-            
-            {/* Previous Summaries (Collapsible) */}
-            {aiSummaries.length > 1 && (
-              <View style={styles.previousSummaries}>
-                <Text style={styles.previousTitle}>Previous Days:</Text>
-                {aiSummaries.slice(1, 3).map((summary, index) => (
-                  <TouchableOpacity 
-                    key={index} 
-                    style={styles.previousCard}
-                    onPress={() => Alert.alert(
-                      `${new Date(summary.date).toLocaleDateString()} Summary`,
-                      summary.ai_summary
-                    )}
-                  >
-                    <Text style={styles.previousDate}>
-                      {new Date(summary.date).toLocaleDateString()}
-                    </Text>
-                    <Text style={styles.previousSummary} numberOfLines={2}>
-                      {summary.ai_summary.substring(0, 100)}...
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
           </View>
         ) : (
-          <View style={styles.noData}>
-            <Text style={styles.noDataText}>No AI insights yet</Text>
-            <Text style={styles.noDataSubtext}>Generate your first AI summary</Text>
+          <View style={styles.noAiData}>
+            <Icon name="insights" size={40} color="#E0E0E0" />
+            <Text style={styles.noAiText}>No AI insights yet</Text>
             <TouchableOpacity onPress={generateAiSummary} style={styles.generateFirstButton}>
-              <Text style={styles.generateFirstButtonText}>Generate AI Summary</Text>
+              <Text style={styles.generateFirstText}>Generate First Insight</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
-      {/* Expense Breakdown */}
-      {dashboardData.today_expenses > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Expense Breakdown</Text>
-          <PieChart
-            data={expenseData}
-            width={screenWidth - 40}
-            height={200}
-            chartConfig={{
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            }}
-            accessor="amount"
-            backgroundColor="transparent"
-            paddingLeft="15"
-            absolute
-          />
-          <Text style={styles.expenseTotal}>
-            Total Expenses: KES {dashboardData.today_expenses.toLocaleString()}
-          </Text>
-        </View>
-      )}
-
-      {/* Live Sales Feed */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Live Sales Feed</Text>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
-          </View>
+      {/* Quick Stats */}
+      <View style={styles.quickStats}>
+        <View style={styles.statItem}>
+          <Icon name="inventory" size={24} color="#FF9800" />
+          <Text style={styles.statNumber}>{dashboardData.low_stock_items}</Text>
+          <Text style={styles.statLabel}>Low Stock</Text>
         </View>
         
-        {liveSales.length > 0 ? (
-          <View>
-            {liveSales.slice(0, 5).map((sale, index) => (
-              <View key={index} style={styles.liveSaleItem}>
-                <View>
-                  <Text style={styles.saleReceipt}>{sale.receipt_number}</Text>
-                  <Text style={styles.saleTime}>
-                    {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
-                <Text style={styles.saleAmount}>KES {sale.total_amount}</Text>
-                <View style={[
-                  styles.profitIndicator,
-                  { backgroundColor: sale.total_amount > 1000 ? '#4CAF50' : '#2196F3' }
-                ]}>
-                  <Text style={styles.profitIndicatorText}>
-                    {sale.total_amount > 1000 ? 'HIGH' : 'NORMAL'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <Text style={styles.noData}>Waiting for sales... 💤</Text>
-        )}
-      </View>
-
-      {/* Performance Metrics */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Performance Metrics</Text>
-        <View style={styles.metricsGrid}>
-          <View style={styles.metricBox}>
-            <Text style={styles.metricNumber}>
-              {dashboardData.avg_transaction ? dashboardData.avg_transaction.toFixed(0) : 0}
-            </Text>
-            <Text style={styles.metricDescription}>Avg. Transaction</Text>
-          </View>
-          
-          <View style={styles.metricBox}>
-            <Text style={styles.metricNumber}>
-              {dashboardData.today_gross_profit ? dashboardData.today_gross_profit.toLocaleString() : 0}
-            </Text>
-            <Text style={styles.metricDescription}>Gross Profit</Text>
-          </View>
-          
-          <View style={styles.metricBox}>
-            <Text style={styles.metricNumber}>
-              {profitMargin}%
-            </Text>
-            <Text style={styles.metricDescription}>Profit Margin</Text>
-          </View>
-          
-          <View style={styles.metricBox}>
-            <Text style={styles.metricNumber}>
-              {dashboardData.low_stock_items}
-            </Text>
-            <Text style={styles.metricDescription}>Low Stock</Text>
-          </View>
+        <View style={styles.statItem}>
+          <Icon name="receipt" size={24} color="#2196F3" />
+          <Text style={styles.statNumber}>{dashboardData.today_transactions}</Text>
+          <Text style={styles.statLabel}>Transactions</Text>
+        </View>
+        
+        <View style={styles.statItem}>
+          <Icon name="show-chart" size={24} color="#4CAF50" />
+          <Text style={styles.statNumber}>{profitMargin}%</Text>
+          <Text style={styles.statLabel}>Profit Margin</Text>
+        </View>
+        
+        <View style={styles.statItem}>
+          <Icon name="account-balance" size={24} color="#9C27B0" />
+          <Text style={styles.statNumber}>
+            KES {dashboardData.today_gross_profit ? 
+              Math.floor(dashboardData.today_gross_profit / 1000) + 'K' : '0'}
+          </Text>
+          <Text style={styles.statLabel}>Gross Profit</Text>
         </View>
       </View>
 
-      {/* Notification Status Banner */}
-      {!notificationPermission && (
-        <TouchableOpacity 
-          onPress={initializeNotifications}
-          style={styles.notificationBanner}
-        >
-          <Text style={styles.notificationBannerText}>
-            🔕 Notifications are disabled. Tap to enable real-time alerts.
-          </Text>
-        </TouchableOpacity>
-      )}
+      {/* System Status */}
+      <View style={styles.systemStatus}>
+        <Text style={styles.statusTitle}>System Status</Text>
+        <View style={styles.statusItems}>
+          <View style={styles.statusItem}>
+            <Icon 
+              name={notificationPermission ? 'notifications-active' : 'notifications-off'} 
+              size={18} 
+              color={notificationPermission ? '#4CAF50' : '#F44336'} 
+            />
+            <Text style={styles.statusText}>
+              Notifications: {notificationPermission ? 'Active' : 'Inactive'}
+            </Text>
+          </View>
+          
+          <View style={styles.statusItem}>
+            <Icon 
+              name={webSocketStatus === 'connected' ? 'wifi' : 'wifi-off'} 
+              size={18} 
+              color={webSocketStatus === 'connected' ? '#4CAF50' : '#F44336'} 
+            />
+            <Text style={styles.statusText}>
+              Live Feed: {webSocketStatus === 'connected' ? 'Connected' : 'Disconnected'}
+            </Text>
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 };
@@ -641,17 +629,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
   header: {
     padding: 20,
     backgroundColor: '#1976d2',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  headerTop: {
+  headerMain: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
   },
   title: {
     fontSize: 24,
@@ -661,61 +660,59 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.9)',
-    marginTop: 5,
+    marginTop: 4,
   },
-  notificationButton: {
+  headerControls: {
+    alignItems: 'flex-end',
+  },
+  notificationControl: {
     alignItems: 'center',
+    marginBottom: 10,
   },
-  notificationBadge: {
+  badgeContainer: {
     position: 'relative',
-  },
-  bellIcon: {
-    fontSize: 24,
   },
   badge: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -5,
+    right: -5,
     backgroundColor: '#FF3B30',
     borderRadius: 10,
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
   },
-  notificationStatus: {
+  controlStatus: {
     fontSize: 10,
     color: 'white',
     marginTop: 4,
     fontWeight: '600',
   },
-  headerStatus: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+  wsStatus: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  statusText: {
+  wsStatusText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
   },
-  statsScroll: {
-    marginTop: -20,
-  },
-  statsContainer: {
+  metricsRow: {
     flexDirection: 'row',
-    padding: 10,
-    paddingLeft: 15,
+    padding: 15,
+    paddingTop: 20,
   },
-  statCard: {
-    width: 180,
+  metricCard: {
+    flex: 1,
     backgroundColor: 'white',
     padding: 15,
-    marginRight: 10,
+    marginHorizontal: 5,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -723,23 +720,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  primaryCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#1976d2',
-  },
-  profitCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
-  },
-  warningCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-  },
-  successCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
-  },
-  statValue: {
+  metricValue: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#1976d2',
@@ -751,37 +732,33 @@ const styles = StyleSheet.create({
   profitNegative: {
     color: '#F44336',
   },
-  statLabel: {
+  metricLabel: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 3,
+    marginBottom: 8,
+  },
+  trendIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
   },
   trendText: {
     fontSize: 10,
     color: '#666',
+    marginLeft: 4,
+  },
+  profitMargin: {
     marginTop: 5,
   },
   marginText: {
     fontSize: 10,
     color: '#4CAF50',
     fontWeight: '500',
-    marginTop: 5,
   },
-  avgText: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 5,
-  },
-  alertText: {
-    fontSize: 10,
-    color: '#FF9800',
-    fontWeight: '500',
-    marginTop: 5,
-  },
-  section: {
+  liveSalesSection: {
     backgroundColor: 'white',
     margin: 15,
-    marginTop: 10,
+    marginTop: 5,
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
@@ -796,181 +773,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-  },
-  chartSubtitle: {
-    fontSize: 12,
-    color: '#666',
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
-  },
-  generateButton: {
-    backgroundColor: '#1976d2',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  generateButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  aiMainCard: {
-    backgroundColor: '#f0f7ff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#d1e3ff',
-  },
-  aiHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  aiDate: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1976d2',
-  },
-  aiStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 5,
-  },
-  statusGood: {
-    backgroundColor: '#4CAF50',
-  },
-  statusWarning: {
-    backgroundColor: '#FF9800',
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#666',
-  },
-  aiSummary: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  insightsMetrics: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  metricItem: {
-    alignItems: 'center',
-  },
-  metricLabel: {
-    fontSize: 11,
-    color: '#666',
-    marginBottom: 3,
-  },
-  metricValue: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  trendUp: {
-    color: '#4CAF50',
-  },
-  trendNeutral: {
-    color: '#FF9800',
-  },
-  statusGoodText: {
-    color: '#4CAF50',
-  },
-  statusWarningText: {
-    color: '#FF9800',
-  },
-  recommendations: {
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#e8f4ff',
-  },
-  recommendationsTitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#1976d2',
-    marginBottom: 8,
-  },
-  recommendationItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 5,
-  },
-  bullet: {
-    fontSize: 16,
-    color: '#1976d2',
-    marginRight: 8,
-    marginTop: -1,
-  },
-  recommendationText: {
-    fontSize: 13,
-    color: '#333',
-    flex: 1,
-    lineHeight: 18,
-  },
-  readMoreButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  readMoreText: {
-    color: '#1976d2',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  previousSummaries: {
-    marginTop: 10,
-  },
-  previousTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 10,
-  },
-  previousCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-  },
-  previousDate: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  previousSummary: {
-    fontSize: 12,
-    color: '#333',
-    lineHeight: 16,
-  },
-  expenseTotal: {
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 10,
+    marginLeft: 8,
   },
   liveIndicator: {
     flexDirection: 'row',
@@ -979,6 +790,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    marginLeft: 10,
   },
   liveDot: {
     width: 6,
@@ -992,75 +804,230 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#F44336',
   },
-  liveSaleItem: {
+  clearText: {
+    fontSize: 12,
+    color: '#1976d2',
+    fontWeight: '600',
+  },
+  liveSalesContainer: {
+    marginBottom: 10,
+  },
+  liveSaleCard: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+  },
+  newSaleCard: {
+    backgroundColor: '#f0f7ff',
+    borderLeftWidth: 4,
+  },
+  saleInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  },
+  saleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   saleReceipt: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
   },
+  newBadge: {
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  newBadgeText: {
+    fontSize: 9,
+    color: 'white',
+    fontWeight: 'bold',
+  },
   saleTime: {
     fontSize: 11,
     color: '#888',
     marginTop: 2,
   },
+  saleAmountContainer: {
+    alignItems: 'flex-end',
+  },
   saleAmount: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1976d2',
+    marginBottom: 4,
   },
-  profitIndicator: {
+  impactTag: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
   },
-  profitIndicatorText: {
+  impactText: {
     fontSize: 9,
-    color: 'white',
     fontWeight: 'bold',
   },
-  metricsGrid: {
+  latestSaleIndicator: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  metricBox: {
-    width: '48%',
-    backgroundColor: '#f8f9fa',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
     alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e8f4ff',
   },
-  metricNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1976d2',
-    marginBottom: 5,
+  latestSaleText: {
+    fontSize: 10,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginLeft: 4,
   },
-  metricDescription: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-  },
-  noData: {
+  noSales: {
     padding: 30,
     alignItems: 'center',
   },
-  noDataText: {
+  noSalesText: {
     color: '#888',
     fontSize: 14,
-    marginBottom: 5,
+    marginTop: 10,
   },
-  noDataSubtext: {
+  noSalesSubtext: {
     color: '#aaa',
     fontSize: 12,
+    marginTop: 5,
+  },
+  statsFooter: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  statsText: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+  },
+  chartsSection: {
+    backgroundColor: 'white',
+    margin: 15,
+    marginTop: 5,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  noChartData: {
+    padding: 30,
+    alignItems: 'center',
+  },
+  noChartText: {
+    color: '#888',
+    fontSize: 14,
+  },
+  aiSection: {
+    backgroundColor: 'white',
+    margin: 15,
+    marginTop: 5,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiGenerateButton: {
+    backgroundColor: '#1976d2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  aiGenerateText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 12,
+    marginLeft: 5,
+  },
+  aiInsights: {
+    marginTop: 10,
+  },
+  aiMainCard: {
+    backgroundColor: '#f0f7ff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d1e3ff',
+  },
+  aiCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aiDate: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1976d2',
+  },
+  aiStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusGood: {
+    backgroundColor: '#4CAF50',
+  },
+  statusWarning: {
+    backgroundColor: '#FF9800',
+  },
+  aiStatusText: {
+    fontSize: 11,
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  aiSummary: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 15,
+  },
+  readMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  readMoreText: {
+    color: '#1976d2',
+    fontWeight: '600',
+    fontSize: 13,
+    marginRight: 5,
+  },
+  noAiData: {
+    padding: 30,
+    alignItems: 'center',
+  },
+  noAiText: {
+    color: '#888',
+    fontSize: 14,
+    marginTop: 10,
     marginBottom: 15,
   },
   generateFirstButton: {
@@ -1069,22 +1036,70 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
   },
-  generateFirstButtonText: {
+  generateFirstText: {
     color: 'white',
     fontWeight: '600',
   },
-  notificationBanner: {
-    backgroundColor: '#FF9800',
-    margin: 15,
+  quickStats: {
+    flexDirection: 'row',
     padding: 15,
+    paddingTop: 5,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 15,
+    margin: 5,
     borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1976d2',
+    marginTop: 5,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+  },
+  systemStatus: {
+    backgroundColor: 'white',
+    margin: 15,
+    marginTop: 5,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  statusItems: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statusItem: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  notificationBannerText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 14,
-    textAlign: 'center',
+  statusText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
   },
 });
 
