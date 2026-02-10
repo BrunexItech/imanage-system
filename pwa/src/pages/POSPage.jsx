@@ -16,6 +16,7 @@ import {
   Badge,
   useMediaQuery,
   useTheme,
+  Drawer,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -24,6 +25,7 @@ import {
   Remove as RemoveIcon,
   Category as CategoryIcon,
   Receipt as ReceiptIcon,
+  ShoppingCart as CartIcon,
 } from '@mui/icons-material';
 import { useCartStore } from '../stores/cartStore';
 import { productAPI } from '../services/api';
@@ -34,6 +36,8 @@ export default function POSPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'));
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  
+  const [cartOpen, setCartOpen] = useState(false);
   
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -161,17 +165,7 @@ export default function POSPage() {
   const getCartStyles = () => {
     if (isMobile) {
       return {
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '50vh',
-        width: '100%',
-        zIndex: 1000,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        boxShadow: '0px -4px 20px rgba(0,0,0,0.15)',
-        overflow: 'hidden',
+        display: 'none', // Hidden on mobile - shown in drawer
       };
     } else if (isTablet) {
       return {
@@ -179,7 +173,7 @@ export default function POSPage() {
         right: 12,
         top: 100,
         height: 'calc(100vh - 120px)',
-        width: '38%',
+        width: '35%',
         zIndex: 1000,
         overflowY: 'auto',
         boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
@@ -191,7 +185,7 @@ export default function POSPage() {
         right: 16,
         top: 100,
         height: 'calc(100vh - 116px)',
-        width: '32%',
+        width: '30%',
         zIndex: 1000,
         overflowY: 'auto',
         boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
@@ -202,9 +196,14 @@ export default function POSPage() {
 
   // Responsive product grid columns
   const getGridColumns = () => {
-    if (isMobile) return { xs: 6, sm: 4, md: 3 };
-    if (isTablet) return { xs: 6, sm: 4, md: 4 };
-    return { xs: 6, sm: 4, md: 4, lg: 3 };
+    if (isMobile) return { xs: 6, sm: 4 }; // 2 columns on mobile
+    if (isTablet) return { xs: 6, sm: 4, md: 4 }; // 3 columns on tablet
+    return { xs: 6, sm: 4, md: 4, lg: 3 }; // 4 columns on desktop
+  };
+
+  // Mobile cart toggle
+  const toggleCart = () => {
+    setCartOpen(!cartOpen);
   };
 
   return (
@@ -236,19 +235,43 @@ export default function POSPage() {
             />
           </Box>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1 }}>
-            <Badge badgeContent={getTotalItems()} color="primary">
-              <ReceiptIcon fontSize={isMobile ? "small" : "medium"} color="action" />
-            </Badge>
-            <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
-              {getTotalItems()} items
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
+            {/* Mobile Cart Button */}
+            {isMobile && (
+              <IconButton 
+                color="primary" 
+                onClick={toggleCart}
+                sx={{ position: 'relative' }}
+              >
+                <Badge badgeContent={getTotalItems()} color="primary">
+                  <CartIcon />
+                </Badge>
+              </IconButton>
+            )}
+            
+            {/* Desktop Cart Badge */}
+            {!isMobile && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Badge badgeContent={getTotalItems()} color="primary">
+                  <ReceiptIcon color="action" />
+                </Badge>
+                <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
+                  {getTotalItems()} items in cart
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Box>
       </Paper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2, flexShrink: 0, mx: isMobile ? 1 : 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
+        <Alert severity="error" sx={{ 
+          mb: 2, 
+          flexShrink: 0, 
+          mx: isMobile ? 1 : 2,
+          fontSize: isMobile ? '0.875rem' : '1rem',
+          p: isMobile ? 1 : 2 
+        }}>
           {error}
         </Alert>
       )}
@@ -270,7 +293,7 @@ export default function POSPage() {
           display: 'flex',
           flexDirection: 'column',
           ml: isMobile ? 1 : 2,
-          mr: isMobile ? 1 : (isTablet ? 'calc(40% + 16px)' : 'calc(34% + 16px)'),
+          mr: isMobile ? 1 : (isTablet ? 'calc(37% + 16px)' : 'calc(32% + 16px)'),
           overflow: 'hidden',
           minWidth: 0,
         }}>
@@ -534,7 +557,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart - Fixed Position - RESPONSIVE */}
+        {/* Cart - Desktop/Tablet Fixed Position */}
         {!isMobile && (
           <Box sx={getCartStyles()}>
             <Box sx={{ 
@@ -547,24 +570,34 @@ export default function POSPage() {
           </Box>
         )}
 
-        {/* Mobile Cart - Bottom Sheet */}
-        {isMobile && (
-          <Box sx={getCartStyles()}>
-            <Box sx={{ 
-              height: '100%', 
-              display: 'flex', 
-              flexDirection: 'column',
-              '& .MuiPaper-root': { 
-                borderTopLeftRadius: 16, 
-                borderTopRightRadius: 16,
-                height: '100%',
-                overflow: 'auto',
-              } 
-            }}>
+        {/* Mobile Cart Drawer */}
+        <Drawer
+          anchor="right"
+          open={cartOpen}
+          onClose={() => setCartOpen(false)}
+          PaperProps={{
+            sx: {
+              width: isMobile ? '100%' : '400px',
+              height: '100%',
+              borderTopLeftRadius: 16,
+              borderBottomLeftRadius: 16,
+            }
+          }}
+        >
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" fontWeight="bold">
+                Cart ({getTotalItems()} items)
+              </Typography>
+              <IconButton onClick={() => setCartOpen(false)}>
+                <RemoveIcon />
+              </IconButton>
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'auto' }}>
               <Cart onCheckoutSuccess={handleCheckoutSuccess} />
             </Box>
           </Box>
-        )}
+        </Drawer>
       </Box>
     </Box>
   );

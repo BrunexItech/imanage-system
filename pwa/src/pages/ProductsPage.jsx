@@ -43,6 +43,7 @@ export default function ProductsPage() {
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,6 +53,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
 
   useEffect(() => {
@@ -70,6 +72,15 @@ export default function ProductsPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await productAPI.getCategories();
+      setCategories(response.data);
+    } catch (err) {
+      console.error('Failed to load categories');
     }
   };
 
@@ -131,6 +142,26 @@ export default function ProductsPage() {
     setActiveTab(newValue);
   };
 
+  // Function to get category name - FIXED
+  const getCategoryName = (product) => {
+    if (!product.category) return 'Uncategorized';
+    
+    // Handle both object and string/ID formats
+    if (typeof product.category === 'object') {
+      return product.category.name || 'Uncategorized';
+    }
+    
+    // If it's a string/number, try to find in categories
+    if (categories.length > 0) {
+      const foundCategory = categories.find(cat => 
+        cat.id === product.category || cat.name === product.category
+      );
+      return foundCategory?.name || product.category || 'Uncategorized';
+    }
+    
+    return product.category || 'Uncategorized';
+  };
+
   const displayedProducts = getFilteredByTab();
 
   if (loading && !products.length) {
@@ -143,7 +174,7 @@ export default function ProductsPage() {
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: isMobile ? 1 : 2 }}>
-      {/* Header */}
+      {/* Header - RESPONSIVE */}
       <Box sx={{ mb: isMobile ? 2 : 4 }}>
         <Typography variant={isMobile ? "h5" : "h4"} fontWeight="bold" gutterBottom>
           Product Management
@@ -154,12 +185,12 @@ export default function ProductsPage() {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, fontSize: isMobile ? '0.875rem' : '1rem' }}>
           {error}
         </Alert>
       )}
 
-      {/* Stats Cards */}
+      {/* Stats Cards - RESPONSIVE */}
       {stats && (
         <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: isMobile ? 2 : 3 }}>
           <Grid item xs={6} sm={6} md={3}>
@@ -223,7 +254,7 @@ export default function ProductsPage() {
                   <PriceIcon color="secondary" sx={{ fontSize: isMobile ? 30 : 40, mr: 1 }} />
                   <Box>
                     <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
-                      KES {stats.totalValue.toFixed(0)}
+                      KES {stats.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </Typography>
                     <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
                       Inventory Value
@@ -236,7 +267,7 @@ export default function ProductsPage() {
         </Grid>
       )}
 
-      {/* Search and Filter */}
+      {/* Search and Filter - RESPONSIVE */}
       <Paper elevation={1} sx={{ p: isMobile ? 1.5 : 2, mb: isMobile ? 2 : 3, borderRadius: 2 }}>
         <Grid container spacing={isMobile ? 1 : 2} alignItems="center">
           <Grid item xs={12} md={6}>
@@ -248,17 +279,17 @@ export default function ProductsPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <SearchIcon fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
-              size="small"
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-              <FilterIcon color="action" fontSize="small" />
-              <Typography variant="caption" color="textSecondary">
+              <FilterIcon color="action" fontSize={isMobile ? "small" : "medium"} />
+              <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
                 Filter:
               </Typography>
               <Tabs
@@ -269,16 +300,16 @@ export default function ProductsPage() {
                 sx={{ minHeight: 36, ml: isMobile ? 0 : 2 }}
               >
                 <Tab label="All" sx={{ minWidth: 'auto', fontSize: isMobile ? '0.75rem' : '0.875rem' }} />
-                <Tab label="Low" sx={{ minWidth: 'auto', fontSize: isMobile ? '0.75rem' : '0.875rem' }} />
-                <Tab label="Out" sx={{ minWidth: 'auto', fontSize: isMobile ? '0.75rem' : '0.875rem' }} />
-                <Tab label="In" sx={{ minWidth: 'auto', fontSize: isMobile ? '0.75rem' : '0.875rem' }} />
+                <Tab label={isMobile ? "Low" : "Low Stock"} sx={{ minWidth: 'auto', fontSize: isMobile ? '0.75rem' : '0.875rem' }} />
+                <Tab label={isMobile ? "Out" : "Out of Stock"} sx={{ minWidth: 'auto', fontSize: isMobile ? '0.75rem' : '0.875rem' }} />
+                <Tab label={isMobile ? "In" : "In Stock"} sx={{ minWidth: 'auto', fontSize: isMobile ? '0.75rem' : '0.875rem' }} />
               </Tabs>
             </Box>
           </Grid>
         </Grid>
       </Paper>
 
-      {/* Products Table */}
+      {/* Products Table - RESPONSIVE */}
       <Paper elevation={1} sx={{ borderRadius: 2, overflow: 'auto' }}>
         <TableContainer sx={{ maxHeight: isMobile ? 400 : 'none' }}>
           <Table size={isMobile ? "small" : "medium"} stickyHeader={isMobile}>
@@ -286,7 +317,7 @@ export default function ProductsPage() {
               <TableRow>
                 {!isMobile && <TableCell><strong>SKU</strong></TableCell>}
                 <TableCell><strong>{isMobile ? "Product" : "Product Name"}</strong></TableCell>
-                <TableCell><strong>{isMobile ? "Cat." : "Category"}</strong></TableCell>
+                <TableCell><strong>{isMobile ? "Category" : "Category"}</strong></TableCell>
                 {!isMobile && <TableCell align="right"><strong>Cost</strong></TableCell>}
                 <TableCell align="right"><strong>{isMobile ? "Price" : "Selling Price"}</strong></TableCell>
                 <TableCell align="center"><strong>{isMobile ? "Stock" : "Current Stock"}</strong></TableCell>
@@ -297,6 +328,8 @@ export default function ProductsPage() {
             <TableBody>
               {displayedProducts.map((product) => {
                 const status = getStockStatus(product);
+                const categoryName = getCategoryName(product); // Use the fixed function
+                
                 return (
                   <TableRow 
                     key={product.id}
@@ -328,9 +361,7 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={typeof product.category === 'object' 
-                          ? product.category?.name 
-                          : product.category || 'Uncategorized'} 
+                        label={categoryName}  {/* Fixed: Shows category name, not number */}
                         size="small" 
                         variant="outlined"
                         sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
@@ -389,25 +420,32 @@ export default function ProductsPage() {
         </TableContainer>
 
         {displayedProducts.length === 0 && (
-          <Box sx={{ textAlign: 'center', p: 4 }}>
-            <InventoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-            <Typography variant="body1" color="textSecondary">
+          <Box sx={{ textAlign: 'center', p: isMobile ? 2 : 4 }}>
+            <InventoryIcon sx={{ fontSize: isMobile ? 36 : 48, color: 'grey.400', mb: 2 }} />
+            <Typography variant={isMobile ? "body2" : "body1"} color="textSecondary">
               No products found
             </Typography>
-            <Typography variant="body2" color="textSecondary">
+            <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
               {search ? 'Try a different search' : 'Add products from Django admin'}
             </Typography>
           </Box>
         )}
       </Paper>
 
-      {/* Summary Footer */}
-      <Box sx={{ mt: 3, display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 1 : 0 }}>
-        <Typography variant="body2" color="textSecondary">
+      {/* Summary Footer - RESPONSIVE */}
+      <Box sx={{ 
+        mt: 3, 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row', 
+        justifyContent: 'space-between', 
+        alignItems: isMobile ? 'flex-start' : 'center', 
+        gap: isMobile ? 1 : 0 
+      }}>
+        <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
           Showing {displayedProducts.length} of {products.length} products
           {search && ` • "${search}"`}
         </Typography>
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
           Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Typography>
       </Box>
