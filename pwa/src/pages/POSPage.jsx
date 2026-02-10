@@ -31,8 +31,9 @@ import Cart from '../components/Cart';
 
 export default function POSPage() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -156,7 +157,7 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Calculate cart styles
+  // Calculate cart styles - RESPONSIVE
   const getCartStyles = () => {
     if (isMobile) {
       return {
@@ -164,7 +165,7 @@ export default function POSPage() {
         bottom: 0,
         left: 0,
         right: 0,
-        height: '55vh',
+        height: '50vh',
         width: '100%',
         zIndex: 1000,
         borderTopLeftRadius: 16,
@@ -172,19 +173,38 @@ export default function POSPage() {
         boxShadow: '0px -4px 20px rgba(0,0,0,0.15)',
         overflow: 'hidden',
       };
+    } else if (isTablet) {
+      return {
+        position: 'fixed',
+        right: 12,
+        top: 100,
+        height: 'calc(100vh - 120px)',
+        width: '38%',
+        zIndex: 1000,
+        overflowY: 'auto',
+        boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
+        borderRadius: 2,
+      };
     } else {
       return {
         position: 'fixed',
         right: 16,
         top: 100,
         height: 'calc(100vh - 116px)',
-        width: isTablet ? '35%' : '30%',
+        width: '32%',
         zIndex: 1000,
         overflowY: 'auto',
         boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
         borderRadius: 2,
       };
     }
+  };
+
+  // Responsive product grid columns
+  const getGridColumns = () => {
+    if (isMobile) return { xs: 6, sm: 4, md: 3 };
+    if (isTablet) return { xs: 6, sm: 4, md: 4 };
+    return { xs: 6, sm: 4, md: 4, lg: 3 };
   };
 
   return (
@@ -195,40 +215,40 @@ export default function POSPage() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Header - Fixed at top */}
+      {/* Header - Fixed at top - RESPONSIVE */}
       <Paper elevation={1} sx={{ 
-        p: 2, 
+        p: isMobile ? 1.5 : 2, 
         borderRadius: 2, 
         flexShrink: 0,
-        mx: 2,
-        mt: 2,
+        mx: isMobile ? 1 : 2,
+        mt: isMobile ? 1 : 2,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h5" fontWeight="bold">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 1 : 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
+            <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
               Point of Sale
             </Typography>
             <Chip 
               label={navigator.onLine ? '🟢 Online' : '🟡 Offline'} 
-              size="small"
+              size={isMobile ? "small" : "medium"}
               color={navigator.onLine ? 'success' : 'warning'}
               variant="outlined"
             />
           </Box>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1 }}>
             <Badge badgeContent={getTotalItems()} color="primary">
-              <ReceiptIcon color="action" />
+              <ReceiptIcon fontSize={isMobile ? "small" : "medium"} color="action" />
             </Badge>
-            <Typography variant="body2" color="textSecondary">
-              {getTotalItems()} items in cart
+            <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
+              {getTotalItems()} items
             </Typography>
           </Box>
         </Box>
       </Paper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2, flexShrink: 0, mx: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, flexShrink: 0, mx: isMobile ? 1 : 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
           {error}
         </Alert>
       )}
@@ -236,77 +256,78 @@ export default function POSPage() {
       {/* Main Content Area */}
       <Box sx={{ 
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         flex: 1,
         minHeight: 0,
         position: 'relative',
-        mt: 2,
+        mt: isMobile ? 1 : 2,
         overflow: 'hidden',
       }}>
-        {/* Products Section */}
+        {/* Products Section - RESPONSIVE */}
         <Box sx={{ 
           flex: 1,
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
-          ml: 2,
-          mr: isMobile ? 2 : (isTablet ? 'calc(38% + 20px)' : 'calc(33% + 20px)'),
+          ml: isMobile ? 1 : 2,
+          mr: isMobile ? 1 : (isTablet ? 'calc(40% + 16px)' : 'calc(34% + 16px)'),
           overflow: 'hidden',
           minWidth: 0,
         }}>
-          {/* Search and Quick Actions - MAKE THIS NARROWER */}
+          {/* Search and Quick Actions - RESPONSIVE */}
           <Box sx={{ 
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
-            mb: 2,
+            mb: isMobile ? 1 : 2,
           }}>
             <Paper elevation={1} sx={{ 
-              p: 2, 
+              p: isMobile ? 1.5 : 2, 
               borderRadius: 2, 
               flexShrink: 0,
-              // CRITICAL: Make search frame narrower
-              width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
+              width: isMobile ? '100%' : (isTablet ? '90%' : '85%'),
               boxSizing: 'border-box',
             }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={7}>
+              <Grid container spacing={isMobile ? 1 : 2} alignItems="center">
+                <Grid item xs={12} md={isMobile ? 12 : 7}>
                   <TextField
                     fullWidth
-                    placeholder="Search by name, SKU, or scan barcode..."
+                    placeholder="Search by name, SKU, or barcode..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon />
+                          <SearchIcon fontSize={isMobile ? "small" : "medium"} />
                         </InputAdornment>
                       ),
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton onClick={handleBarcodeScan} size="small">
-                            <BarcodeIcon />
+                          <IconButton onClick={handleBarcodeScan} size={isMobile ? "small" : "medium"}>
+                            <BarcodeIcon fontSize={isMobile ? "small" : "medium"} />
                           </IconButton>
                         </InputAdornment>
                       ),
                     }}
-                    size="small"
+                    size={isMobile ? "small" : "medium"}
                   />
                 </Grid>
                 
-                <Grid item xs={12} md={5}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
+                <Grid item xs={12} md={isMobile ? 12 : 5}>
+                  <Box sx={{ display: 'flex', gap: isMobile ? 0.5 : 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary" sx={{ mr: isMobile ? 0.5 : 1 }}>
                       Quick Qty:
                     </Typography>
                     {[1, 2, 5, 10].map((qty) => (
                       <Chip
                         key={qty}
                         label={`+${qty}`}
-                        size="small"
+                        size={isMobile ? "small" : "medium"}
                         variant={quickQuantity === qty ? 'filled' : 'outlined'}
                         color={quickQuantity === qty ? 'primary' : 'default'}
                         onClick={() => setQuickQuantity(qty)}
                         clickable
+                        sx={{ fontSize: isMobile ? '0.7rem' : '0.875rem' }}
                       />
                     ))}
                   </Box>
@@ -315,41 +336,46 @@ export default function POSPage() {
             </Paper>
           </Box>
 
-          {/* Categories - MAKE THIS NARROWER */}
+          {/* Categories - RESPONSIVE */}
           <Box sx={{ 
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
-            mb: 2,
+            mb: isMobile ? 1 : 2,
           }}>
             <Paper elevation={1} sx={{ 
-              p: 1, 
+              p: isMobile ? 0.5 : 1, 
               borderRadius: 2, 
               flexShrink: 0,
-              // CRITICAL: Make categories frame narrower
-              width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
+              width: isMobile ? '100%' : (isTablet ? '90%' : '85%'),
               boxSizing: 'border-box',
             }}>
               {loadingCategories ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-                  <CircularProgress size={20} />
+                  <CircularProgress size={isMobile ? 16 : 20} />
                 </Box>
               ) : (
                 <Tabs
                   value={selectedCategory}
                   onChange={(e, newValue) => setSelectedCategory(newValue)}
                   variant="scrollable"
-                  scrollButtons="auto"
-                  sx={{ minHeight: 40 }}
+                  scrollButtons={isMobile ? "auto" : "auto"}
+                  sx={{ minHeight: isMobile ? 36 : 40 }}
                 >
                   {categories.map((cat) => (
                     <Tab 
                       key={cat.id}
-                      label={cat.name} 
+                      label={isMobile ? cat.name.split(' ')[0] : cat.name}
                       value={cat.id}
-                      icon={<CategoryIcon />}
+                      icon={isMobile ? <CategoryIcon fontSize="small" /> : <CategoryIcon />}
                       iconPosition="start"
-                      sx={{ minHeight: 40, py: 0.5, fontSize: '0.875rem' }}
+                      sx={{ 
+                        minHeight: isMobile ? 36 : 40, 
+                        py: isMobile ? 0.25 : 0.5, 
+                        fontSize: isMobile ? '0.75rem' : '0.875rem',
+                        minWidth: 'auto',
+                        px: isMobile ? 1 : 2,
+                      }}
                     />
                   ))}
                 </Tabs>
@@ -357,12 +383,12 @@ export default function POSPage() {
             </Paper>
           </Box>
 
-          {/* Product Grid - This stays full width */}
+          {/* Product Grid - RESPONSIVE */}
           <Paper 
             elevation={1} 
             sx={{ 
               flex: 1,
-              p: 2, 
+              p: isMobile ? 1 : 2, 
               borderRadius: 2,
               overflow: 'auto',
               bgcolor: 'grey.50',
@@ -373,68 +399,66 @@ export default function POSPage() {
           >
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <CircularProgress />
+                <CircularProgress size={isMobile ? 40 : 60} />
               </Box>
             ) : filteredProducts.length > 0 ? (
-              <Grid container spacing={1.5}>
+              <Grid container spacing={isMobile ? 1 : 1.5}>
                 {filteredProducts.map((product) => (
                   <Grid item 
-                    xs={6} 
-                    sm={4} 
-                    md={4} 
-                    lg={3} 
+                    {...getGridColumns()}
                     key={product.id}
                   >
                     <Paper
                       elevation={0}
                       sx={{
-                        p: 1.5,
+                        p: isMobile ? 1 : 1.5,
                         cursor: 'pointer',
                         border: `1px solid ${
                           product.current_stock <= 0 ? '#ff9800' :
                           product.current_stock <= product.minimum_stock ? '#f44336' : 
                           '#e0e0e0'
                         }`,
-                        borderRadius: 2,
+                        borderRadius: isMobile ? 1 : 2,
                         height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
                         transition: 'all 0.2s',
                         '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: 2,
+                          transform: isMobile ? 'none' : 'translateY(-2px)',
+                          boxShadow: isMobile ? 1 : 2,
                           bgcolor: 'background.paper',
                         },
                         position: 'relative',
                       }}
                       onClick={() => handleProductClick(product)}
                     >
-                      {/* Stock Badge */}
+                      {/* Stock Badge - RESPONSIVE */}
                       <Chip
                         label={getStockText(product)}
                         size="small"
                         color={getStockColor(product)}
                         sx={{ 
                           position: 'absolute', 
-                          top: 8, 
-                          right: 8,
-                          fontSize: '0.6rem',
-                          height: 20,
+                          top: isMobile ? 4 : 8, 
+                          right: isMobile ? 4 : 8,
+                          fontSize: isMobile ? '0.55rem' : '0.6rem',
+                          height: isMobile ? 16 : 20,
                         }}
                       />
 
-                      {/* Product Info */}
+                      {/* Product Info - RESPONSIVE */}
                       <Typography 
-                        variant="body2" 
+                        variant={isMobile ? "caption" : "body2"} 
                         fontWeight="medium"
                         sx={{ 
-                          mb: 0.5,
+                          mb: isMobile ? 0.25 : 0.5,
                           lineHeight: 1.2,
-                          height: 32,
+                          height: isMobile ? 28 : 32,
                           overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
+                          fontSize: isMobile ? '0.75rem' : '0.875rem',
                         }}
                       >
                         {product.name}
@@ -444,51 +468,51 @@ export default function POSPage() {
                         variant="caption" 
                         color="textSecondary" 
                         sx={{ 
-                          fontSize: '0.7rem',
-                          mb: 1,
+                          fontSize: isMobile ? '0.65rem' : '0.7rem',
+                          mb: isMobile ? 0.5 : 1,
                         }}
                       >
                         SKU: {product.sku}
                       </Typography>
 
-                      {/* Price and Actions */}
-                      <Box sx={{ mt: 'auto', pt: 1 }}>
-                        <Typography variant="body1" fontWeight="bold" color="primary">
+                      {/* Price and Actions - RESPONSIVE */}
+                      <Box sx={{ mt: 'auto', pt: isMobile ? 0.5 : 1 }}>
+                        <Typography variant={isMobile ? "body2" : "body1"} fontWeight="bold" color="primary" sx={{ fontSize: isMobile ? '0.8rem' : '1rem' }}>
                           KES {product.selling_price}
                         </Typography>
                         
-                        {/* Quick Actions */}
-                        <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                        {/* Quick Actions - RESPONSIVE */}
+                        <Box sx={{ display: 'flex', gap: isMobile ? 0.25 : 0.5, mt: isMobile ? 0.5 : 1 }}>
                           <IconButton
-                            size="small"
+                            size={isMobile ? "small" : "small"}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleQuantityClick(product, -1);
                             }}
                             sx={{ 
                               bgcolor: 'grey.100',
-                              p: 0.5,
-                              minWidth: 30,
+                              p: isMobile ? 0.25 : 0.5,
+                              minWidth: isMobile ? 24 : 30,
                               '&:hover': { bgcolor: 'grey.200' }
                             }}
                           >
-                            <RemoveIcon fontSize="small" />
+                            <RemoveIcon fontSize={isMobile ? "small" : "small"} />
                           </IconButton>
                           
                           <IconButton
-                            size="small"
+                            size={isMobile ? "small" : "small"}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleQuantityClick(product, 1);
                             }}
                             sx={{ 
                               bgcolor: 'grey.100',
-                              p: 0.5,
-                              minWidth: 30,
+                              p: isMobile ? 0.25 : 0.5,
+                              minWidth: isMobile ? 24 : 30,
                               '&:hover': { bgcolor: 'grey.200' }
                             }}
                           >
-                            <AddIcon fontSize="small" />
+                            <AddIcon fontSize={isMobile ? "small" : "small"} />
                           </IconButton>
                         </Box>
                       </Box>
@@ -497,12 +521,12 @@ export default function POSPage() {
                 ))}
               </Grid>
             ) : (
-              <Box sx={{ textAlign: 'center', p: 4 }}>
-                <SearchIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                <Typography variant="body1" color="textSecondary">
+              <Box sx={{ textAlign: 'center', p: isMobile ? 2 : 4 }}>
+                <SearchIcon sx={{ fontSize: isMobile ? 36 : 48, color: 'grey.400', mb: 2 }} />
+                <Typography variant={isMobile ? "body2" : "body1"} color="textSecondary">
                   No products found
                 </Typography>
-                <Typography variant="body2" color="textSecondary">
+                <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary">
                   {search ? 'Try a different search' : 'Add products from Django admin'}
                 </Typography>
               </Box>
@@ -510,24 +534,37 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart - Fixed Position */}
-        <Box sx={getCartStyles()}>
-          <Box sx={{ 
-            height: '100%', 
-            display: 'flex', 
-            flexDirection: 'column',
-            ...(isMobile && { 
+        {/* Cart - Fixed Position - RESPONSIVE */}
+        {!isMobile && (
+          <Box sx={getCartStyles()}>
+            <Box sx={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
+            }}>
+              <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+            </Box>
+          </Box>
+        )}
+
+        {/* Mobile Cart - Bottom Sheet */}
+        {isMobile && (
+          <Box sx={getCartStyles()}>
+            <Box sx={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
               '& .MuiPaper-root': { 
                 borderTopLeftRadius: 16, 
                 borderTopRightRadius: 16,
                 height: '100%',
                 overflow: 'auto',
               } 
-            }),
-          }}>
-            <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+            }}>
+              <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+            </Box>
           </Box>
-        </Box>
+        )}
       </Box>
     </Box>
   );
