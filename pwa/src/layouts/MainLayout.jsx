@@ -173,13 +173,13 @@ const MainLayout = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
-      {/* App bar for mobile */}
+      {/* App bar for mobile/tablet */}
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-          display: { sm: 'none' },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
+          display: { xs: 'flex', sm: 'flex', md: 'none' }, // Show on xs, sm, hide on md+
         }}
       >
         <Toolbar>
@@ -199,18 +199,19 @@ const MainLayout = ({ children }) => {
         </Toolbar>
       </AppBar>
 
-      {/* Desktop permanent drawer */}
+      {/* Sidebar drawer */}
       <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
       >
+        {/* Mobile/Tablet temporary drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{ keepMounted: true }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
+            display: { xs: 'block', sm: 'block', md: 'none' }, // Show on xs, sm, hide on md+
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
@@ -219,10 +220,12 @@ const MainLayout = ({ children }) => {
         >
           {drawer}
         </Drawer>
+        
+        {/* Desktop permanent drawer */}
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
+            display: { xs: 'none', sm: 'none', md: 'block' }, // Hide on xs, sm, show on md+
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
@@ -241,9 +244,10 @@ const MainLayout = ({ children }) => {
         sx={{
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          width: { xs: '100%', sm: '100%', md: `calc(100% - ${drawerWidth}px)` },
           height: '100vh',
-          mt: { xs: '56px', sm: 0 }, // Mobile app bar height
+          mt: { xs: '56px', sm: '56px', md: 0 }, // Mobile/tablet app bar height
+          overflow: 'hidden',
         }}
       >
         {children}

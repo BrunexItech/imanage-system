@@ -16,8 +16,6 @@ import {
   useMediaQuery,
   useTheme,
   Drawer,
-  AppBar,
-  Toolbar,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -35,7 +33,6 @@ import Cart from '../components/Cart';
 export default function POSPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -165,7 +162,6 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Toggle cart drawer for mobile
   const toggleCartDrawer = (open) => (event) => {
     if (
       event &&
@@ -245,7 +241,7 @@ export default function POSPage() {
         </Alert>
       )}
 
-      {/* Main Content Area - Responsive Grid */}
+      {/* Main Content Area */}
       <Box sx={{ 
         flex: 1,
         display: 'flex',
@@ -254,7 +250,7 @@ export default function POSPage() {
         overflow: 'hidden',
         minHeight: 0,
       }}>
-        {/* Products Section - Takes available space */}
+        {/* Products Section */}
         <Box sx={{ 
           flex: 1,
           display: 'flex',
@@ -525,7 +521,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart Section - Desktop */}
+        {/* Desktop Cart Section - FIXED to show all content */}
         {!isMobile && (
           <Box sx={{
             width: { md: '35%', lg: '30%', xl: '25%' },
@@ -544,6 +540,7 @@ export default function POSPage() {
                 border: '2px solid #1976d2',
                 overflow: 'hidden',
                 minHeight: 0,
+                height: '100%',
               }}
             >
               <Box sx={{ 
@@ -552,7 +549,28 @@ export default function POSPage() {
                 flexDirection: 'column',
                 minHeight: 0,
               }}>
-                <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+                {/* Cart Header */}
+                <Box sx={{ 
+                  p: 2,
+                  borderBottom: '1px solid #e0e0e0',
+                  bgcolor: '#f5f5f5',
+                  flexShrink: 0,
+                }}>
+                  <Typography variant="h6" fontWeight="bold">
+                    Shopping Cart ({getTotalItems()} items)
+                  </Typography>
+                </Box>
+                
+                {/* Cart Content - FIXED: Now shows all content */}
+                <Box sx={{ 
+                  flex: 1,
+                  overflow: 'hidden',
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                  <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+                </Box>
               </Box>
             </Paper>
           </Box>
