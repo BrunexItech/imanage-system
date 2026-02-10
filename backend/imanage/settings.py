@@ -32,7 +32,7 @@ ALLOWED_HOSTS = ['*']  # Will change this in production
 # Grok API Key for AI features
 GROK_API_KEY = os.getenv('GROK_API_KEY', '')
 
-FCM_SERVER_KEY = os.environ.get('FCM_SERVER_KEY', 'AIzaSyAIC7HLxzZT7fcIitBWEgldwX5T6_7eX00')
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'imanage-firebase-adminsdk.json')
 
 
 # Application definition

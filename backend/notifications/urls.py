@@ -4,7 +4,8 @@ from .views import (
     SendNotificationView,
     NotificationListView,
     MarkNotificationReadView,
-    MarkAllNotificationsReadView
+    MarkAllNotificationsReadView,
+    TestNotificationView  # ADD THIS IMPORT
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('', NotificationListView.as_view(), name='notification-list'),
     path('<int:pk>/mark-read/', MarkNotificationReadView.as_view(), name='mark-notification-read'),
     path('mark-all-read/', MarkAllNotificationsReadView.as_view(), name='mark-all-notifications-read'),
+    path('test/', TestNotificationView.as_view(), name='test-notification'), 
 ]
