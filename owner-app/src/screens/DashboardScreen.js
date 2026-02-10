@@ -553,37 +553,43 @@ const DashboardScreen = () => {
         )}
       </View>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Updated to 2x2 Grid */}
       <View style={styles.quickStats}>
-        <View style={styles.statItem}>
-          <Text style={{ fontSize: 24, color: '#FF9800' }}>📦</Text>
-          <Text style={styles.statNumber}>{dashboardData.low_stock_items}</Text>
-          <Text style={styles.statLabel}>Low Stock</Text>
+        {/* First Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={{ fontSize: 28, color: '#FF9800' }}>📦</Text>
+            <Text style={styles.statNumber}>{dashboardData.low_stock_items}</Text>
+            <Text style={styles.statLabel}>Low Stock</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Text style={{ fontSize: 28, color: '#2196F3' }}>🧾</Text>
+            <Text style={styles.statNumber}>{dashboardData.today_transactions}</Text>
+            <Text style={styles.statLabel}>Transactions</Text>
+          </View>
         </View>
         
-        <View style={styles.statItem}>
-          <Text style={{ fontSize: 24, color: '#2196F3' }}>🧾</Text>
-          <Text style={styles.statNumber}>{dashboardData.today_transactions}</Text>
-          <Text style={styles.statLabel}>Transactions</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Text style={{ fontSize: 24, color: '#4CAF50' }}>📊</Text>
-          <Text style={styles.statNumber}>{profitMargin}%</Text>
-          <Text style={styles.statLabel}>Profit Margin</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Text style={{ fontSize: 24, color: '#9C27B0' }}>💰</Text>
-          <Text style={styles.statNumber}>
-            KES {dashboardData.today_gross_profit ? 
-              Math.floor(dashboardData.today_gross_profit / 1000) + 'K' : '0'}
-          </Text>
-          <Text style={styles.statLabel}>Gross Profit</Text>
+        {/* Second Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={{ fontSize: 28, color: '#4CAF50' }}>📊</Text>
+            <Text style={styles.statNumber}>{profitMargin}%</Text>
+            <Text style={styles.statLabel}>Profit Margin</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Text style={{ fontSize: 28, color: '#9C27B0' }}>💰</Text>
+            <Text style={styles.statNumber}>
+              KES {dashboardData.today_gross_profit ? 
+                Math.floor(dashboardData.today_gross_profit / 1000) + 'K' : '0'}
+            </Text>
+            <Text style={styles.statLabel}>Gross Profit</Text>
+          </View>
         </View>
       </View>
 
-      {/* System Status - Improved spacing */}
+      {/* System Status */}
       <View style={styles.systemStatus}>
         <Text style={styles.statusTitle}>System Status</Text>
         <View style={styles.statusItems}>
@@ -1030,34 +1036,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   quickStats: {
+    margin: 15,
+    marginTop: 5,
+  },
+  statsRow: {
     flexDirection: 'row',
-    padding: 15,
-    paddingTop: 5,
+    marginBottom: 10,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
     backgroundColor: 'white',
-    padding: 15,
-    margin: 5,
+    padding: 20,
+    marginHorizontal: 5,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 2,
+    elevation: 3,
   },
   statNumber: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1976d2',
-    marginTop: 5,
-    marginBottom: 2,
+    marginTop: 10,
+    marginBottom: 5,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#666',
     textAlign: 'center',
+    fontWeight: '500',
   },
   systemStatus: {
     backgroundColor: 'white',
