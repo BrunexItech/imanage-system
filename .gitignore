@@ -41,3 +41,4 @@ build/
 backend/venv/
 __pycache__/
 *.pyc
+*.json
