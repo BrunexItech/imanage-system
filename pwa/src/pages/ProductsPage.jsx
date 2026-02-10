@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Typography,
   Box,
   Table,
@@ -11,7 +10,6 @@ import {
   TableRow,
   Paper,
   Chip,
-  IconButton,
   CircularProgress,
   Alert,
   TextField,
@@ -328,7 +326,7 @@ export default function ProductsPage() {
             <TableBody>
               {displayedProducts.map((product) => {
                 const status = getStockStatus(product);
-                const categoryName = getCategoryName(product); // Use the fixed function
+                const categoryName = getCategoryName(product);
                 
                 return (
                   <TableRow 
@@ -361,7 +359,7 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={categoryName}  {/* Fixed: Shows category name, not number */}
+                        label={categoryName}
                         size="small" 
                         variant="outlined"
                         sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
