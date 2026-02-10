@@ -32,8 +32,7 @@ ALLOWED_HOSTS = ['*']  # Will change this in production
 # Grok API Key for AI features
 GROK_API_KEY = os.getenv('GROK_API_KEY', '')
 
-FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'imanage-firebase-adminsdk.json')
-
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'imanage-ai-firebase-adminsdk-fbsvc-3dcc1db5b1.json')
 
 # Application definition
 INSTALLED_APPS = [
