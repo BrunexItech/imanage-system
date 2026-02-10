@@ -13,7 +13,6 @@ import {
 import { ownerAPI, webSocketService } from '../services/api';
 import notificationService from '../services/notificationService';
 import { LineChart, PieChart } from 'react-native-chart-kit';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const DashboardScreen = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -94,22 +93,19 @@ const DashboardScreen = () => {
         receipt_number: notification.data.receipt_number || 'N/A',
         total_amount: notification.data.amount || '0',
         created_at: notification.data.timestamp || new Date().toISOString(),
-        is_new: true, // Flag for animation
+        is_new: true,
       };
       
-      // Add to live sales with animation flag
       setLiveSales(prev => {
         const updated = [newSale, ...prev.slice(0, 8)];
         return updated;
       });
       
-      // Refresh dashboard after 1 second
       setTimeout(() => {
         loadDashboard();
       }, 1000);
     }
     
-    // Show alert for important notifications
     if (notification.notification && notification.data?.type !== 'sale') {
       Alert.alert(
         notification.notification.title || 'Imanage AI',
@@ -137,7 +133,6 @@ const DashboardScreen = () => {
         setWebSocketStatus('connected');
         
         if (data.type === 'new_sale') {
-          // Add new sale with animation flag
           const animatedSale = {
             ...data.sale,
             is_new: true,
@@ -151,7 +146,6 @@ const DashboardScreen = () => {
           
           loadDashboard();
           
-          // Auto-clear new flag after 3 seconds
           setTimeout(() => {
             setLiveSales(prev => prev.map(sale => ({
               ...sale,
@@ -165,7 +159,6 @@ const DashboardScreen = () => {
         console.error('WebSocket error:', error);
         setWebSocketStatus('disconnected');
         
-        // Attempt reconnect after 5 seconds
         setTimeout(() => {
           if (wsRef.current) {
             wsRef.current.disconnect();
@@ -275,13 +268,12 @@ const DashboardScreen = () => {
   if (!dashboardData) {
     return (
       <View style={styles.loadingContainer}>
-        <Icon name="trending-up" size={60} color="#1976d2" />
+        <Text style={{ fontSize: 60 }}>📈</Text>
         <Text style={styles.loadingText}>Loading Business Intelligence...</Text>
       </View>
     );
   }
 
-  // Prepare chart data
   const chartData = {
     labels: salesTrend.slice(-7).map(day => {
       const date = new Date(day.created_at__date);
@@ -330,7 +322,7 @@ const DashboardScreen = () => {
               style={styles.notificationControl}
             >
               <View style={styles.badgeContainer}>
-                <Icon name="notifications" size={24} color="white" />
+                <Text style={{ fontSize: 24 }}>🔔</Text>
                 {unreadNotifications > 0 && (
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>
@@ -360,7 +352,7 @@ const DashboardScreen = () => {
           <Text style={styles.metricLabel}>Today's Revenue</Text>
           {prediction > 0 && (
             <View style={styles.trendIndicator}>
-              <Icon name="trending-up" size={12} color="#4CAF50" />
+              <Text style={{ fontSize: 12, color: '#4CAF50' }}>📈</Text>
               <Text style={styles.trendText}>KES {prediction.toFixed(0)} predicted</Text>
             </View>
           )}
@@ -384,7 +376,7 @@ const DashboardScreen = () => {
       <Animated.View style={[styles.liveSalesSection, pulseAnimation]}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
-            <Icon name="flash-on" size={20} color="#FF9800" />
+            <Text style={{ fontSize: 20, color: '#FF9800' }}>⚡</Text>
             <Text style={styles.sectionTitle}>Live Sales Feed</Text>
             <View style={styles.liveIndicator}>
               <View style={styles.liveDot} />
@@ -442,7 +434,7 @@ const DashboardScreen = () => {
                   
                   {index === 0 && liveSales.length > 0 && (
                     <View style={styles.latestSaleIndicator}>
-                      <Icon name="arrow-upward" size={14} color="#4CAF50" />
+                      <Text style={{ fontSize: 14, color: '#4CAF50' }}>⬆️</Text>
                       <Text style={styles.latestSaleText}>Latest Sale</Text>
                     </View>
                   )}
@@ -452,7 +444,7 @@ const DashboardScreen = () => {
           </View>
         ) : (
           <View style={styles.noSales}>
-            <Icon name="shopping-cart" size={40} color="#E0E0E0" />
+            <Text style={{ fontSize: 40, color: '#E0E0E0' }}>🛒</Text>
             <Text style={styles.noSalesText}>Waiting for sales...</Text>
             <Text style={styles.noSalesSubtext}>Sales will appear here in real-time</Text>
           </View>
@@ -506,7 +498,7 @@ const DashboardScreen = () => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>AI Business Insights</Text>
           <TouchableOpacity onPress={generateAiSummary} style={styles.aiGenerateButton}>
-            <Icon name="auto-awesome" size={16} color="white" />
+            <Text style={{ fontSize: 16, color: 'white' }}>✨</Text>
             <Text style={styles.aiGenerateText}>Generate</Text>
           </TouchableOpacity>
         </View>
@@ -528,11 +520,9 @@ const DashboardScreen = () => {
                   aiSummaries[0].insights?.profitability === 'good' ? 
                     styles.statusGood : styles.statusWarning
                 ]}>
-                  <Icon 
-                    name={aiSummaries[0].insights?.profitability === 'good' ? 'check-circle' : 'warning'} 
-                    size={14} 
-                    color="white" 
-                  />
+                  <Text style={{ fontSize: 14, color: 'white' }}>
+                    {aiSummaries[0].insights?.profitability === 'good' ? '✅' : '⚠️'}
+                  </Text>
                   <Text style={styles.aiStatusText}>
                     {aiSummaries[0].insights?.profitability === 'good' ? 'Profitable' : 'Needs Attention'}
                   </Text>
@@ -548,13 +538,13 @@ const DashboardScreen = () => {
                 style={styles.readMoreButton}
               >
                 <Text style={styles.readMoreText}>Read Full Analysis</Text>
-                <Icon name="arrow-forward" size={16} color="#1976d2" />
+                <Text style={{ fontSize: 16, color: '#1976d2' }}>→</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.noAiData}>
-            <Icon name="insights" size={40} color="#E0E0E0" />
+            <Text style={{ fontSize: 40, color: '#E0E0E0' }}>📊</Text>
             <Text style={styles.noAiText}>No AI insights yet</Text>
             <TouchableOpacity onPress={generateAiSummary} style={styles.generateFirstButton}>
               <Text style={styles.generateFirstText}>Generate First Insight</Text>
@@ -566,25 +556,25 @@ const DashboardScreen = () => {
       {/* Quick Stats */}
       <View style={styles.quickStats}>
         <View style={styles.statItem}>
-          <Icon name="inventory" size={24} color="#FF9800" />
+          <Text style={{ fontSize: 24, color: '#FF9800' }}>📦</Text>
           <Text style={styles.statNumber}>{dashboardData.low_stock_items}</Text>
           <Text style={styles.statLabel}>Low Stock</Text>
         </View>
         
         <View style={styles.statItem}>
-          <Icon name="receipt" size={24} color="#2196F3" />
+          <Text style={{ fontSize: 24, color: '#2196F3' }}>🧾</Text>
           <Text style={styles.statNumber}>{dashboardData.today_transactions}</Text>
           <Text style={styles.statLabel}>Transactions</Text>
         </View>
         
         <View style={styles.statItem}>
-          <Icon name="show-chart" size={24} color="#4CAF50" />
+          <Text style={{ fontSize: 24, color: '#4CAF50' }}>📊</Text>
           <Text style={styles.statNumber}>{profitMargin}%</Text>
           <Text style={styles.statLabel}>Profit Margin</Text>
         </View>
         
         <View style={styles.statItem}>
-          <Icon name="account-balance" size={24} color="#9C27B0" />
+          <Text style={{ fontSize: 24, color: '#9C27B0' }}>💰</Text>
           <Text style={styles.statNumber}>
             KES {dashboardData.today_gross_profit ? 
               Math.floor(dashboardData.today_gross_profit / 1000) + 'K' : '0'}
@@ -593,33 +583,32 @@ const DashboardScreen = () => {
         </View>
       </View>
 
-      {/* System Status */}
+      {/* System Status - Improved spacing */}
       <View style={styles.systemStatus}>
         <Text style={styles.statusTitle}>System Status</Text>
         <View style={styles.statusItems}>
-          <View style={styles.statusItem}>
-            <Icon 
-              name={notificationPermission ? 'notifications-active' : 'notifications-off'} 
-              size={18} 
-              color={notificationPermission ? '#4CAF50' : '#F44336'} 
-            />
+          <View style={[styles.statusItem, styles.statusItemSpaced]}>
+            <Text style={{ fontSize: 18, color: notificationPermission ? '#4CAF50' : '#F44336' }}>
+              {notificationPermission ? '🔔' : '🔕'}
+            </Text>
             <Text style={styles.statusText}>
               Notifications: {notificationPermission ? 'Active' : 'Inactive'}
             </Text>
           </View>
           
-          <View style={styles.statusItem}>
-            <Icon 
-              name={webSocketStatus === 'connected' ? 'wifi' : 'wifi-off'} 
-              size={18} 
-              color={webSocketStatus === 'connected' ? '#4CAF50' : '#F44336'} 
-            />
+          <View style={[styles.statusItem, styles.statusItemSpaced]}>
+            <Text style={{ fontSize: 18, color: webSocketStatus === 'connected' ? '#4CAF50' : '#F44336' }}>
+              {webSocketStatus === 'connected' ? '🌐' : '📡'}
+            </Text>
             <Text style={styles.statusText}>
               Live Feed: {webSocketStatus === 'connected' ? 'Connected' : 'Disconnected'}
             </Text>
           </View>
         </View>
       </View>
+
+      {/* Bottom Spacing */}
+      <View style={styles.bottomSpacing} />
     </ScrollView>
   );
 };
@@ -1096,10 +1085,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  statusItemSpaced: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    flex: 1,
+    marginHorizontal: 5,
+    justifyContent: 'center',
+  },
   statusText: {
     fontSize: 12,
     color: '#666',
     marginLeft: 8,
+  },
+  bottomSpacing: {
+    height: 20,
   },
 });
 
