@@ -11,6 +11,9 @@ from inventory.models import Product
 from payments.models import Expense
 from django.db import models
 
+# Import notification helper
+from notifications.views import send_business_notification
+
 # Daily summary views
 class DailySummaryListView(generics.ListAPIView):
     serializer_class = DailySummarySerializer
@@ -48,7 +51,6 @@ class DashboardView(APIView):
         transaction_count = today_sales.count()
         
         # Calculate GROSS PROFIT (revenue - cost of goods sold)
-        # This is the key change: using unit_price - cost_price
         today_gross_profit = 0
         for sale in today_sales:
             for item in sale.items.all():
@@ -76,6 +78,24 @@ class DashboardView(APIView):
         ).order_by('-created_at')[:10].values(
             'id', 'receipt_number', 'total_amount', 'created_at'
         )
+        
+        # Check if we should send low stock alert
+        if low_stock > 0:
+            # Send notification only once per day
+            today_alerts = Notification.objects.filter(
+                user=request.user,
+                notification_type='stock',
+                sent_at__date=today
+            ).count()
+            
+            if today_alerts == 0 and low_stock > 3:  # Only if more than 3 items low stock
+                send_business_notification(
+                    business=business,
+                    title='⚠️ Low Stock Alert',
+                    message=f'{low_stock} items are low in stock. Please check inventory.',
+                    notification_type='stock',
+                    data={'low_stock_count': low_stock}
+                )
         
         return Response({
             'today_sales': total_revenue,  # Total revenue
@@ -111,3 +131,25 @@ class SalesTrendView(APIView):
             'period': {'start': start_date, 'end': end_date},
             'daily_sales': list(daily_sales)
         })
+
+# Add notification helper for sales
+def send_sale_notification(sale):
+    """Send notification for new sale"""
+    from notifications.views import send_business_notification
+    from notifications.models import Notification
+    
+    business = sale.business
+    
+    # Send push notification
+    send_business_notification(
+        business=business,
+        title='💰 New Sale',
+        message=f'Receipt #{sale.receipt_number}: KES {sale.total_amount:.2f}',
+        notification_type='sale',
+        data={
+            'sale_id': sale.id,
+            'receipt_number': sale.receipt_number,
+            'amount': str(sale.total_amount),
+            'items_count': sale.items.count()
+        }
+    )

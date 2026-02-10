@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "450675790322",
+    "project_id": "imanage-ai",
+    "storage_bucket": "imanage-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:450675790322:android:c0810a4e5891f0c2905b6b",
+        "android_client_info": {
+          "package_name": "com.ownerapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_acANvTUvTNaa-5JDgf-9dpTS_nBnD50"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

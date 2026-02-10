@@ -7,6 +7,9 @@ from .models import Sale, SaleItem, Shift
 from .serializers import SaleSerializer, CreateSaleSerializer, ShiftSerializer
 from inventory.models import Product
 
+# Import notification helper
+from notifications.views import send_business_notification
+
 # Sale views
 class SaleListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -42,6 +45,43 @@ class SaleListCreateView(generics.ListCreateAPIView):
             if product:
                 product.current_stock -= item.quantity
                 product.save()
+                
+                # Check if product is now low stock
+                if product.current_stock <= product.minimum_stock:
+                    # Send low stock notification
+                    send_business_notification(
+                        business=request.user.business,
+                        title='⚠️ Low Stock Alert',
+                        message=f'{product.name} is low in stock. Current: {product.current_stock}, Min: {product.minimum_stock}',
+                        notification_type='stock',
+                        data={
+                            'product_id': product.id,
+                            'product_name': product.name,
+                            'current_stock': product.current_stock,
+                            'minimum_stock': product.minimum_stock,
+                        }
+                    )
+        
+        # Send WebSocket notification for real-time update
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'sales_{request.user.business_id}',
+                {
+                    'type': 'new_sale',
+                    'sale': {
+                        'id': sale.id,
+                        'receipt_number': sale.receipt_number,
+                        'total_amount': str(sale.total_amount),
+                        'created_at': sale.created_at.isoformat(),
+                    }
+                }
+            )
+        except:
+            pass  # WebSocket not configured, ignore
         
         return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
 
@@ -61,7 +101,21 @@ class ShiftListCreateView(generics.ListCreateAPIView):
         return Shift.objects.filter(cashier=self.request.user)
     
     def perform_create(self, serializer):
-        serializer.save(cashier=self.request.user, business=self.request.user.business)
+        shift = serializer.save(cashier=self.request.user, business=self.request.user.business)
+        
+        # Send shift notification
+        send_business_notification(
+            business=self.request.user.business,
+            title='👤 Shift Started',
+            message=f'{self.request.user.email} started shift {shift.shift_number}\nStarting cash: KES {shift.starting_cash:.2f}',
+            notification_type='system',
+            data={
+                'shift_id': shift.id,
+                'shift_number': shift.shift_number,
+                'cashier': self.request.user.email,
+                'starting_cash': str(shift.starting_cash),
+            }
+        )
 
 class ShiftDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = ShiftSerializer
@@ -96,6 +150,20 @@ class OpenShiftView(APIView):
         user.current_shift_start = timezone.now()
         user.current_shift_float = shift.starting_cash
         user.save()
+        
+        # Send shift notification
+        send_business_notification(
+            business=user.business,
+            title='👤 Shift Started',
+            message=f'{user.email} started shift {shift.shift_number}\nStarting cash: KES {shift.starting_cash:.2f}',
+            notification_type='system',
+            data={
+                'shift_id': shift.id,
+                'shift_number': shift.shift_number,
+                'cashier': user.email,
+                'starting_cash': str(shift.starting_cash),
+            }
+        )
         
         return Response(ShiftSerializer(shift).data, status=status.HTTP_201_CREATED)
 
@@ -132,4 +200,43 @@ class CloseShiftView(APIView):
         user.current_shift_float = 0.00
         user.save()
         
+        # Send shift closure notification
+        difference_text = "✅ Balanced" if shift.difference == 0 else f"⚠️ Difference: KES {shift.difference:.2f}"
+        
+        send_business_notification(
+            business=user.business,
+            title='👤 Shift Closed',
+            message=f'{user.email} closed shift {shift.shift_number}\nExpected: KES {shift.expected_cash:.2f}, Actual: KES {shift.actual_cash:.2f}\n{difference_text}',
+            notification_type='system',
+            data={
+                'shift_id': shift.id,
+                'shift_number': shift.shift_number,
+                'cashier': user.email,
+                'expected_cash': str(shift.expected_cash),
+                'actual_cash': str(shift.actual_cash),
+                'difference': str(shift.difference),
+                'duration': str(shift.end_time - shift.start_time),
+            }
+        )
+        
         return Response(ShiftSerializer(shift).data)
+
+# Real-time sale count endpoint for dashboard
+class TodaySalesCountView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        business = request.user.business
+        today = timezone.now().date()
+        
+        count = Sale.objects.filter(
+            business=business,
+            created_at__date=today,
+            status='completed'
+        ).count()
+        
+        return Response({
+            'date': today.isoformat(),
+            'sales_count': count,
+            'last_updated': timezone.now().isoformat()
+        })

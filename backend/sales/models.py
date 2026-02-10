@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 import uuid  # For unique transaction IDs
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Sale transaction model
 class Sale(models.Model):
@@ -137,3 +139,41 @@ class Shift(models.Model):
     def calculate_difference(self):
         self.difference = self.actual_cash - self.expected_cash
         return self.difference
+
+# Signal to send notification when sale is created
+@receiver(post_save, sender=Sale)
+def send_sale_notification(sender, instance, created, **kwargs):
+    if created and instance.status == 'completed':
+        try:
+            # Import here to avoid circular import
+            from notifications.views import send_business_notification
+            
+            # Determine notification title based on sale amount
+            if instance.total_amount > 5000:
+                title = '💰 Major Sale!'
+                emoji = '💰'
+            elif instance.total_amount > 1000:
+                title = '💵 Good Sale'
+                emoji = '💵'
+            else:
+                title = '🛒 New Sale'
+                emoji = '🛒'
+            
+            # Send notification
+            send_business_notification(
+                business=instance.business,
+                title=title,
+                message=f'{emoji} Receipt #{instance.receipt_number}: KES {instance.total_amount:.2f}\nCashier: {instance.cashier.email if instance.cashier else "System"}',
+                notification_type='sale',
+                data={
+                    'sale_id': instance.id,
+                    'receipt_number': instance.receipt_number,
+                    'total_amount': str(instance.total_amount),
+                    'items_count': instance.items.count(),
+                    'cashier': instance.cashier.email if instance.cashier else None,
+                    'timestamp': instance.created_at.isoformat(),
+                }
+            )
+        except Exception as e:
+            # Log error but don't crash sale creation
+            print(f"Failed to send sale notification: {e}")

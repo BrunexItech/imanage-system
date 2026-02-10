@@ -72,6 +72,11 @@ export const ownerAPI = {
     if (queryParams.length > 0) url += `?${queryParams.join('&')}`;
     return api.get(url);
   },
+
+  // Notification endpoints
+  registerDeviceToken: (token) => api.post('/notifications/register-device/', { token }),
+  getNotifications: () => api.get('/notifications/'),
+  markNotificationRead: (id) => api.patch(`/notifications/${id}/mark-read/`),
 };
 
 // WebSocket service

@@ -7,6 +7,10 @@ from datetime import date
 from .models import DailySummary
 from .ai_service import ai_analyzer
 
+# Import notification helper
+from notifications.views import send_business_notification
+from notifications.models import Notification
+
 class GenerateAISummaryView(APIView):
     permission_classes = [IsAuthenticated]
     
@@ -32,6 +36,36 @@ class GenerateAISummaryView(APIView):
         
         # Generate AI summary
         if summary.generate_ai_summary():
+            # Prepare notification message based on insights
+            insights = summary.insights or {}
+            profitability = insights.get('profitability', 'needs_attention')
+            sales_trend = insights.get('sales_trend', 'stable')
+            
+            if profitability == 'good' and sales_trend == 'increasing':
+                notification_title = '📈 Great Day!'
+                notification_message = f"Your business had an excellent day on {target_date}! Sales are up and profitable."
+            elif profitability == 'good':
+                notification_title = '✅ Profitable Day'
+                notification_message = f"Your business was profitable on {target_date}. Check your AI summary for details."
+            else:
+                notification_title = '📊 Daily Summary Ready'
+                notification_message = f"Your AI business summary for {target_date} is ready with insights and recommendations."
+            
+            # Send notification
+            send_business_notification(
+                business=business,
+                title=notification_title,
+                message=notification_message,
+                notification_type='summary',
+                data={
+                    'summary_id': summary.id,
+                    'date': target_date.isoformat(),
+                    'profitability': profitability,
+                    'sales_trend': sales_trend,
+                    'net_profit': float(summary.net_profit),
+                }
+            )
+            
             return Response({
                 'success': True,
                 'message': 'AI summary generated successfully',
@@ -39,6 +73,7 @@ class GenerateAISummaryView(APIView):
                 'insights': summary.insights,
                 'recommendations': summary.recommendations,
                 'date': summary.date.isoformat(),
+                'notification_sent': True,
             })
         else:
             return Response({
@@ -87,8 +122,46 @@ class GetAISummaryView(APIView):
                 }
             })
         
+        # Check for unread notifications
+        unread_count = Notification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).count()
+        
         return Response({
             'success': True,
             'count': len(data),
             'summaries': data,
+            'unread_notifications': unread_count,
         })
+
+# Add function to send periodic business alerts
+def send_periodic_business_alerts(business):
+    """Send periodic alerts based on business performance"""
+    today = timezone.now().date()
+    
+    # Check for zero sales day
+    today_sales = Sale.objects.filter(
+        business=business,
+        created_at__date=today,
+        status='completed'
+    ).count()
+    
+    if today_sales == 0 and timezone.now().hour >= 15:  # After 3 PM with no sales
+        send_business_notification(
+            business=business,
+            title='⚠️ No Sales Today',
+            message="It's 3 PM and you haven't recorded any sales today. Check if everything is okay.",
+            notification_type='alert',
+            data={'alert_type': 'no_sales', 'time': timezone.now().isoformat()}
+        )
+    
+    # Check for high-value sale opportunity (based on time of day)
+    if timezone.now().hour in [10, 14, 17]:  # Peak hours
+        send_business_notification(
+            business=business,
+            title='⏰ Peak Hour Reminder',
+            message=f"It's {timezone.now().strftime('%I:%M %p')} - a peak business hour. Ensure staff are prepared!",
+            notification_type='alert',
+            data={'alert_type': 'peak_hour', 'hour': timezone.now().hour}
+        )

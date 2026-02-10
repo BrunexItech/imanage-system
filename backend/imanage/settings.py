@@ -32,6 +32,9 @@ ALLOWED_HOSTS = ['*']  # Will change this in production
 # Grok API Key for AI features
 GROK_API_KEY = os.getenv('GROK_API_KEY', '')
 
+FCM_SERVER_KEY = os.environ.get('FCM_SERVER_KEY', 'AIzaSyAIC7HLxzZT7fcIitBWEgldwX5T6_7eX00')
+
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -54,6 +57,7 @@ INSTALLED_APPS = [
     'sales',
     'payments',
     'analytics',
+    'notifications',
 ]
 
 MIDDLEWARE = [
