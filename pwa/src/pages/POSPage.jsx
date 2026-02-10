@@ -16,6 +16,8 @@ import {
   Badge,
   useMediaQuery,
   useTheme,
+  SwipeableDrawer,
+  Drawer,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -24,6 +26,7 @@ import {
   Remove as RemoveIcon,
   Category as CategoryIcon,
   Receipt as ReceiptIcon,
+  ShoppingCart as CartIcon,
 } from '@mui/icons-material';
 import { useCartStore } from '../stores/cartStore';
 import { productAPI } from '../services/api';
@@ -47,6 +50,7 @@ export default function POSPage() {
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [quickQuantity, setQuickQuantity] = useState(1);
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -74,12 +78,10 @@ export default function POSPage() {
     try {
       setLoadingCategories(true);
       const response = await productAPI.getCategories();
-      // Add "All Products" as first category
       const allCategories = [{ id: 'all', name: 'All Products' }, ...response.data];
       setCategories(allCategories);
     } catch (err) {
       console.error('Failed to load categories, using default');
-      // Fallback to default categories if API fails
       setCategories([
         { id: 'all', name: 'All Products' },
         { id: 'food', name: 'Food & Beverages' },
@@ -94,7 +96,6 @@ export default function POSPage() {
   const filterProducts = () => {
     let filtered = products;
 
-    // Apply search filter
     if (search) {
       filtered = filtered.filter(product =>
         product.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -103,10 +104,8 @@ export default function POSPage() {
       );
     }
 
-    // Apply category filter
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(product => {
-        // Handle both category object and category name
         if (product.category) {
           return typeof product.category === 'object' 
             ? product.category.id === selectedCategory || product.category.name === selectedCategory
@@ -121,6 +120,10 @@ export default function POSPage() {
 
   const handleProductClick = (product) => {
     addItem(product, quickQuantity);
+    // On mobile, open cart drawer after adding item
+    if (isMobile) {
+      setCartDrawerOpen(true);
+    }
   };
 
   const handleQuantityClick = (product, increment) => {
@@ -133,6 +136,10 @@ export default function POSPage() {
     } else {
       addItem(product, Math.max(1, increment));
     }
+    // On mobile, open cart drawer after quantity change
+    if (isMobile && increment > 0) {
+      setCartDrawerOpen(true);
+    }
   };
 
   const handleBarcodeScan = () => {
@@ -142,6 +149,10 @@ export default function POSPage() {
 
   const handleCheckoutSuccess = () => {
     loadProducts();
+    // Close cart drawer on mobile after checkout
+    if (isMobile) {
+      setCartDrawerOpen(false);
+    }
   };
 
   const getStockColor = (product) => {
@@ -156,23 +167,10 @@ export default function POSPage() {
     return 'In Stock';
   };
 
-  // Calculate cart styles
+  // Calculate cart styles - ONLY FOR DESKTOP
   const getCartStyles = () => {
-    if (isMobile) {
-      return {
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '55vh',
-        width: '100%',
-        zIndex: 1000,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        boxShadow: '0px -4px 20px rgba(0,0,0,0.15)',
-        overflow: 'hidden',
-      };
-    } else {
+    // This function now ONLY applies to desktop/tablet
+    if (!isMobile) {
       return {
         position: 'fixed',
         right: 16,
@@ -183,8 +181,23 @@ export default function POSPage() {
         overflowY: 'auto',
         boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
         borderRadius: 2,
+        // Add border as requested
+        border: '2px solid #1976d2', // Blue border, can change to gold: '#FFD700'
       };
     }
+    return {}; // Mobile will use drawer instead
+  };
+
+  // Cart toggle for mobile
+  const toggleCartDrawer = (open) => (event) => {
+    if (
+      event &&
+      event.type === 'keydown' &&
+      (event.key === 'Tab' || event.key === 'Shift')
+    ) {
+      return;
+    }
+    setCartDrawerOpen(open);
   };
 
   return (
@@ -217,6 +230,25 @@ export default function POSPage() {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Mobile Cart Toggle Button */}
+            {isMobile && (
+              <IconButton 
+                color="primary" 
+                onClick={() => setCartDrawerOpen(true)}
+                sx={{ 
+                  position: 'relative',
+                  border: '2px solid #1976d2',
+                  borderRadius: 2,
+                  p: 1,
+                  mr: 1,
+                }}
+              >
+                <Badge badgeContent={getTotalItems()} color="primary">
+                  <CartIcon />
+                </Badge>
+              </IconButton>
+            )}
+            
             <Badge badgeContent={getTotalItems()} color="primary">
               <ReceiptIcon color="action" />
             </Badge>
@@ -249,11 +281,12 @@ export default function POSPage() {
           display: 'flex',
           flexDirection: 'column',
           ml: 2,
+          // Desktop/Tablet margin for cart - UNCHANGED
           mr: isMobile ? 2 : (isTablet ? 'calc(38% + 20px)' : 'calc(33% + 20px)'),
           overflow: 'hidden',
           minWidth: 0,
         }}>
-          {/* Search and Quick Actions - MAKE THIS NARROWER */}
+          {/* Search and Quick Actions */}
           <Box sx={{ 
             width: '100%',
             display: 'flex',
@@ -264,7 +297,6 @@ export default function POSPage() {
               p: 2, 
               borderRadius: 2, 
               flexShrink: 0,
-              // CRITICAL: Make search frame narrower
               width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
               boxSizing: 'border-box',
             }}>
@@ -315,7 +347,7 @@ export default function POSPage() {
             </Paper>
           </Box>
 
-          {/* Categories - MAKE THIS NARROWER */}
+          {/* Categories */}
           <Box sx={{ 
             width: '100%',
             display: 'flex',
@@ -326,7 +358,6 @@ export default function POSPage() {
               p: 1, 
               borderRadius: 2, 
               flexShrink: 0,
-              // CRITICAL: Make categories frame narrower
               width: isMobile ? '100%' : (isTablet ? '85%' : '80%'),
               boxSizing: 'border-box',
             }}>
@@ -357,7 +388,7 @@ export default function POSPage() {
             </Paper>
           </Box>
 
-          {/* Product Grid - This stays full width */}
+          {/* Product Grid */}
           <Paper 
             elevation={1} 
             sx={{ 
@@ -510,24 +541,72 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Cart - Fixed Position */}
-        <Box sx={getCartStyles()}>
-          <Box sx={{ 
-            height: '100%', 
-            display: 'flex', 
-            flexDirection: 'column',
-            ...(isMobile && { 
-              '& .MuiPaper-root': { 
-                borderTopLeftRadius: 16, 
-                borderTopRightRadius: 16,
-                height: '100%',
-                overflow: 'auto',
-              } 
-            }),
-          }}>
-            <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+        {/* Desktop Cart - Fixed Position (UNCHANGED) */}
+        {!isMobile && (
+          <Box sx={getCartStyles()}>
+            <Box sx={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
+            }}>
+              <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+            </Box>
           </Box>
-        </Box>
+        )}
+
+        {/* Mobile Cart Drawer */}
+        {isMobile && (
+          <Drawer
+            anchor="right"
+            open={cartDrawerOpen}
+            onClose={toggleCartDrawer(false)}
+            PaperProps={{
+              sx: {
+                width: '100%',
+                maxWidth: '100%',
+                height: '100%',
+                borderLeft: '3px solid #1976d2', // Blue border, can change to '#FFD700' for gold
+                boxShadow: '-5px 0px 15px rgba(0,0,0,0.3)',
+                '& .MuiPaper-root': {
+                  borderRadius: 0,
+                }
+              }
+            }}
+          >
+            <Box sx={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}>
+              {/* Drawer Header */}
+              <Box sx={{ 
+                p: 2, 
+                borderBottom: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                bgcolor: '#f5f5f5',
+              }}>
+                <Typography variant="h6" fontWeight="bold">
+                  Shopping Cart ({getTotalItems()} items)
+                </Typography>
+                <IconButton onClick={() => setCartDrawerOpen(false)}>
+                  <RemoveIcon />
+                </IconButton>
+              </Box>
+              
+              {/* Cart Content - Full Height */}
+              <Box sx={{ 
+                flex: 1,
+                overflow: 'auto',
+                height: '100%',
+              }}>
+                <Cart onCheckoutSuccess={handleCheckoutSuccess} />
+              </Box>
+            </Box>
+          </Drawer>
+        )}
       </Box>
     </Box>
   );
