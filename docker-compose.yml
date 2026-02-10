@@ -29,7 +29,6 @@ services:
              daphne -b 0.0.0.0 -p 8000 imanage.asgi:application"
     volumes:
       - ./backend:/app
-      - ./backend/imanage-ai-firebase-adminsdk-fbsvc-3dcc1db5b1.json:/app/imanage-ai-firebase-adminsdk-fbsvc-3dcc1db5b1.json
     environment:
       - DEBUG=True
       - DATABASE_URL=postgres://imanage_user:imanage_password@postgres:5432/imanage_db
