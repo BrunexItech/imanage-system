@@ -8,7 +8,7 @@ export const employeeAPI = {
   getEmployee: (id) => api.get(`/accounts/users/${id}/`),
   
   // Create new employee (cashier/manager/supervisor)
-  createEmployee: (data) => api.post('/accounts/users/', data),
+  createEmployee: (data) => api.post('/accounts/users/create/', data),
   
   // Update employee
   updateEmployee: (id, data) => api.patch(`/accounts/users/${id}/`, data),
