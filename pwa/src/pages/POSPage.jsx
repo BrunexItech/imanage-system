@@ -521,7 +521,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Desktop Cart Section - FIXED to show all content */}
+        {/* Desktop Cart Section - ENTIRE CART SCROLLABLE */}
         {!isMobile && (
           <Box sx={{
             width: { md: '35%', lg: '30%', xl: '25%' },
@@ -543,34 +543,13 @@ export default function POSPage() {
                 height: '100%',
               }}
             >
+              {/* ENTIRE CART SCROLLS - No separation of header/content */}
               <Box sx={{ 
                 height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
+                overflow: 'auto',  // Changed from 'hidden' to 'auto'
                 minHeight: 0,
               }}>
-                {/* Cart Header */}
-                <Box sx={{ 
-                  p: 2,
-                  borderBottom: '1px solid #e0e0e0',
-                  bgcolor: '#f5f5f5',
-                  flexShrink: 0,
-                }}>
-                  <Typography variant="h6" fontWeight="bold">
-                    Shopping Cart ({getTotalItems()} items)
-                  </Typography>
-                </Box>
-                
-                {/* Cart Content - FIXED: Now shows all content */}
-                <Box sx={{ 
-                  flex: 1,
-                  overflow: 'hidden',
-                  minHeight: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}>
-                  <Cart onCheckoutSuccess={handleCheckoutSuccess} />
-                </Box>
+                <Cart onCheckoutSuccess={handleCheckoutSuccess} />
               </Box>
             </Paper>
           </Box>
