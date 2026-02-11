@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Grid,
   TextField,
@@ -16,6 +16,11 @@ import {
   useMediaQuery,
   useTheme,
   Drawer,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -25,10 +30,15 @@ import {
   Category as CategoryIcon,
   ShoppingCart as CartIcon,
   Close as CloseIcon,
+  Print as PrintIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
+import { useReactToPrint } from 'react-to-print';
 import { useCartStore } from '../stores/cartStore';
 import { productAPI } from '../services/api';
 import Cart from '../components/Cart';
+import ReceiptTemplate from '../components/ReceiptTemplate';
+import receiptService from '../services/receiptService';
 
 export default function POSPage() {
   const theme = useTheme();
@@ -36,9 +46,9 @@ export default function POSPage() {
   
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const cartItems = useCartStore((state) => state.items); // ADD THIS LINE
+  const cartItems = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
   
-  // Calculate total items from cart items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
   const [products, setProducts] = useState([]);
@@ -51,6 +61,18 @@ export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [quickQuantity, setQuickQuantity] = useState(1);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  
+  // NEW: Receipt states
+  const [receiptData, setReceiptData] = useState(null);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [saleCompleted, setSaleCompleted] = useState(false);
+  const receiptRef = useRef();
+
+  // NEW: Print handler
+  const handlePrint = useReactToPrint({
+    content: () => receiptRef.current,
+    documentTitle: `Receipt-${receiptData?.sale?.receipt_number || 'sale'}`,
+  });
 
   useEffect(() => {
     loadProducts();
@@ -120,7 +142,6 @@ export default function POSPage() {
 
   const handleProductClick = (product) => {
     addItem(product, quickQuantity);
-    // No automatic cart opening - user opens cart manually
   };
 
   const handleQuantityClick = (product, increment) => {
@@ -133,7 +154,6 @@ export default function POSPage() {
     } else {
       addItem(product, Math.max(1, increment));
     }
-    // No automatic cart opening - user opens cart manually
   };
 
   const handleBarcodeScan = () => {
@@ -141,11 +161,107 @@ export default function POSPage() {
     setSearch('');
   };
 
-  const handleCheckoutSuccess = () => {
-    loadProducts();
-    if (isMobile) {
-      setCartDrawerOpen(false);
+  // NEW: Handle successful checkout - generate receipt
+  const handleCheckoutSuccess = async (saleResponse) => {
+    try {
+      // Load business data
+      const business = await receiptService.loadBusinessData();
+      
+      // Get cart items for receipt
+      const items = cartItems.map(item => ({
+        product_name: item.product.name,
+        quantity: item.quantity,
+        unit_price: item.product.selling_price,
+        total_price: item.quantity * item.product.selling_price,
+      }));
+      
+      // Calculate totals
+      const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
+      const tax = subtotal * (business?.tax_rate || 16) / 100;
+      const total = subtotal + tax;
+      
+      // Create sale data object
+      const saleData = {
+        receipt_number: saleResponse?.data?.receipt_number || `RCP-${Date.now().toString().slice(-8)}`,
+        created_at: new Date().toISOString(),
+        cashier: { name: useCartStore.getState().user?.first_name || 'Staff' },
+        customer_name: saleResponse?.data?.customer_name || 'Walk-in Customer',
+        customer_phone: saleResponse?.data?.customer_phone || '',
+        subtotal: subtotal,
+        tax_amount: tax,
+        discount_amount: saleResponse?.data?.discount_amount || 0,
+        total_amount: total,
+        amount_paid: saleResponse?.data?.amount_paid || total,
+        change_given: saleResponse?.data?.change_given || 0,
+      };
+      
+      // Generate receipt data
+      const data = receiptService.generateReceiptData(saleData, items, business);
+      setReceiptData(data);
+      setSaleCompleted(true);
+      setShowReceiptDialog(true);
+      
+      // Refresh products and clear cart
+      loadProducts();
+      clearCart();
+      if (isMobile) {
+        setCartDrawerOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to generate receipt:', error);
+      // Still show success but without receipt
+      setSaleCompleted(true);
+      setShowReceiptDialog(true);
     }
+  };
+
+  // NEW: WhatsApp handler
+  const handleWhatsApp = () => {
+    if (!receiptData?.sale?.customer_phone) {
+      alert('Customer phone number required for WhatsApp receipt');
+      return;
+    }
+    
+    const text = generateWhatsAppText(receiptData);
+    const phone = receiptData.sale.customer_phone.replace(/\D/g, '');
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  // NEW: Generate WhatsApp text
+  const generateWhatsAppText = (data) => {
+    const { business, sale, items, totals } = data;
+    
+    let text = `*${business.name}*\n`;
+    text += `${business.address || ''}\n`;
+    if (business.phone) text += `Tel: ${business.phone}\n`;
+    text += `\n`;
+    text += `Receipt: ${sale.receipt_number}\n`;
+    text += `Date: ${sale.date}\n`;
+    text += `Cashier: ${sale.cashier}\n`;
+    text += `Customer: ${sale.customer_name}\n`;
+    if (sale.customer_phone) text += `Tel: ${sale.customer_phone}\n`;
+    text += `\n*ITEMS*\n`;
+    
+    items.forEach(item => {
+      text += `${item.name} x${item.quantity} @ ${item.price.toFixed(2)} = ${item.total.toFixed(2)}\n`;
+    });
+    
+    text += `\nSubtotal: ${totals.subtotal.toFixed(2)}`;
+    if (totals.discount > 0) text += `\nDiscount: -${totals.discount.toFixed(2)}`;
+    text += `\nTax: ${totals.tax.toFixed(2)}`;
+    text += `\n*TOTAL: ${totals.total.toFixed(2)}*`;
+    text += `\nPaid: ${totals.paid.toFixed(2)}`;
+    text += `\nChange: ${totals.change.toFixed(2)}`;
+    text += `\n\n${business.footer || 'Thank you for your business!'}`;
+    
+    return text;
+  };
+
+  // NEW: Close receipt dialog
+  const handleCloseReceipt = () => {
+    setShowReceiptDialog(false);
+    setSaleCompleted(false);
   };
 
   const getStockColor = (product) => {
@@ -215,17 +331,17 @@ export default function POSPage() {
                   p: 1,
                 }}
               >
-                <Badge badgeContent={totalItems} color="primary"> {/* UPDATED */}
+                <Badge badgeContent={totalItems} color="primary">
                   <CartIcon />
                 </Badge>
               </IconButton>
             ) : (
               <>
-                <Badge badgeContent={totalItems} color="primary" sx={{ mr: 1 }}> {/* UPDATED */}
+                <Badge badgeContent={totalItems} color="primary" sx={{ mr: 1 }}>
                   <CartIcon color="action" />
                 </Badge>
                 <Typography variant="body2" color="textSecondary">
-                  {totalItems} items {/* UPDATED */}
+                  {totalItems} items
                 </Typography>
               </>
             )}
@@ -519,7 +635,7 @@ export default function POSPage() {
           </Paper>
         </Box>
 
-        {/* Desktop Cart Section - ENTIRE CART SCROLLABLE */}
+        {/* Desktop Cart Section */}
         {!isMobile && (
           <Box sx={{
             width: { md: '35%', lg: '30%', xl: '25%' },
@@ -541,10 +657,9 @@ export default function POSPage() {
                 height: '100%',
               }}
             >
-              {/* ENTIRE CART SCROLLS - No separation of header/content */}
               <Box sx={{ 
                 height: '100%',
-                overflow: 'auto',  // Changed from 'hidden' to 'auto'
+                overflow: 'auto',
                 minHeight: 0,
               }}>
                 <Cart onCheckoutSuccess={handleCheckoutSuccess} />
@@ -586,7 +701,7 @@ export default function POSPage() {
               bgcolor: 'background.paper',
             }}>
               <Typography variant="h6" fontWeight="bold">
-                Shopping Cart ({totalItems} items) {/* UPDATED */}
+                Shopping Cart ({totalItems} items)
               </Typography>
               <IconButton onClick={() => setCartDrawerOpen(false)} size="small">
                 <CloseIcon />
@@ -604,6 +719,77 @@ export default function POSPage() {
           </Box>
         </Drawer>
       )}
+
+      {/* NEW: Receipt Dialog */}
+      <Dialog
+        open={showReceiptDialog}
+        onClose={handleCloseReceipt}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          bgcolor: saleCompleted ? 'success.main' : 'primary.main',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}>
+          {saleCompleted ? '✓ Sale Completed!' : 'Receipt'}
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 0, bgcolor: '#f5f5f5' }}>
+          {receiptData && (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              p: 2,
+            }}>
+              <ReceiptTemplate ref={receiptRef} data={receiptData} />
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ 
+          p: 2, 
+          gap: 1,
+          borderTop: '1px solid #e0e0e0',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+        }}>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            onClick={handlePrint}
+            sx={{ minWidth: 120 }}
+          >
+            Print
+          </Button>
+          
+          <Button
+            variant="outlined"
+            startIcon={<WhatsAppIcon />}
+            onClick={handleWhatsApp}
+            sx={{ minWidth: 120 }}
+            color="success"
+          >
+            WhatsApp
+          </Button>
+          
+          <Button
+            variant="text"
+            onClick={handleCloseReceipt}
+            sx={{ minWidth: 100 }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
