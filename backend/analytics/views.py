@@ -10,6 +10,7 @@ from sales.models import Sale
 from inventory.models import Product
 from payments.models import Expense
 from django.db import models
+from notifications.models import Notification
 
 # Import notification helper
 from notifications.views import send_business_notification
