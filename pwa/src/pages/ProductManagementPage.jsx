@@ -353,7 +353,8 @@ export default function ProductManagementPage() {
   const renderDesktopTable = () => (
     <TableContainer component={Paper} elevation={2} sx={{ 
       overflowX: 'auto',
-      width: '100%'
+      width: '100%',
+      maxWidth: '100%'
     }}>
       <Table sx={{ minWidth: 1200 }}>
         <TableHead>
