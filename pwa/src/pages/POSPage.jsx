@@ -699,16 +699,20 @@ export default function POSPage() {
         </Drawer>
       )}
 
-      {/* Receipt Dialog */}
+            {/* Receipt Dialog */}
       <Dialog
         open={showReceiptDialog}
         onClose={handleCloseReceipt}
         maxWidth="sm"
         fullWidth
+        disableEnforceFocus
+        style={{ zIndex: 9999 }}
         PaperProps={{
           sx: {
             borderRadius: 2,
             overflow: 'hidden',
+            position: 'relative',
+            zIndex: 9999
           }
         }}
       >
