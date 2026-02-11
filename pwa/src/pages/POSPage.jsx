@@ -117,9 +117,7 @@ export default function POSPage() {
 
   const handleProductClick = (product) => {
     addItem(product, quickQuantity);
-    if (isMobile) {
-      setCartDrawerOpen(true);
-    }
+    // No automatic cart opening - user opens cart manually
   };
 
   const handleQuantityClick = (product, increment) => {
@@ -132,10 +130,7 @@ export default function POSPage() {
     } else {
       addItem(product, Math.max(1, increment));
     }
-    
-    if (isMobile && increment > 0) {
-      setCartDrawerOpen(true);
-    }
+    // No automatic cart opening - user opens cart manually
   };
 
   const handleBarcodeScan = () => {
