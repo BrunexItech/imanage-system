@@ -113,11 +113,15 @@ export default function Cart({ onCheckoutSuccess }) {
         setTenderAmount('');
         setChangeAmount(0);
         
+        // Call onCheckoutSuccess FIRST to open receipt dialog
         if (onCheckoutSuccess) {
           onCheckoutSuccess(saleResponse);
         }
         
-        alert(result.synced ? 'Sale completed!' : 'Sale saved offline - will sync later');
+        // Show alert AFTER receipt dialog opens
+        setTimeout(() => {
+          alert(result.synced ? '✅ Sale completed! Receipt ready.' : '📱 Sale saved offline - will sync later');
+        }, 200);
       }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -244,7 +248,7 @@ export default function Cart({ onCheckoutSuccess }) {
         </Box>
       </Box>
 
-      {/* Payment Method - Improved */}
+      {/* Payment Method */}
       <Typography variant="subtitle2" gutterBottom>
         Payment Method
       </Typography>
@@ -296,7 +300,7 @@ export default function Cart({ onCheckoutSuccess }) {
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {/* Tender Amount & Change - Improved KES badge */}
+      {/* Tender Amount & Change */}
       {paymentMethod === 'cash' && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle2" gutterBottom>
