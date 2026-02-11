@@ -36,7 +36,10 @@ export default function POSPage() {
   
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const getTotalItems = useCartStore((state) => state.getTotalItems);
+  const cartItems = useCartStore((state) => state.items); // ADD THIS LINE
+  
+  // Calculate total items from cart items
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -212,17 +215,17 @@ export default function POSPage() {
                   p: 1,
                 }}
               >
-                <Badge badgeContent={getTotalItems()} color="primary">
+                <Badge badgeContent={totalItems} color="primary"> {/* UPDATED */}
                   <CartIcon />
                 </Badge>
               </IconButton>
             ) : (
               <>
-                <Badge badgeContent={getTotalItems()} color="primary" sx={{ mr: 1 }}>
+                <Badge badgeContent={totalItems} color="primary" sx={{ mr: 1 }}> {/* UPDATED */}
                   <CartIcon color="action" />
                 </Badge>
                 <Typography variant="body2" color="textSecondary">
-                  {getTotalItems()} items
+                  {totalItems} items {/* UPDATED */}
                 </Typography>
               </>
             )}
@@ -583,7 +586,7 @@ export default function POSPage() {
               bgcolor: 'background.paper',
             }}>
               <Typography variant="h6" fontWeight="bold">
-                Shopping Cart ({getTotalItems()} items)
+                Shopping Cart ({totalItems} items) {/* UPDATED */}
               </Typography>
               <IconButton onClick={() => setCartDrawerOpen(false)} size="small">
                 <CloseIcon />
