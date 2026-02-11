@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import POSPage from './pages/POSPage';
 import ProductsPage from './pages/ProductsPage';
+import EmployeesPage from './pages/EmployeesPage';
+import ProductManagementPage from './pages/ProductManagementPage';
 import MainLayout from './layouts/MainLayout';
 
 // Error Boundary Component
@@ -123,6 +125,20 @@ function App() {
             <Route path="/products" element={
               <ProtectedRoute>
                 <ProductsPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* NEW: Employee Management - Owners/Managers only */}
+            <Route path="/employees" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <EmployeesPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* NEW: Product Management - Owners/Managers/Supervisors */}
+            <Route path="/products/manage" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager', 'supervisor']}>
+                <ProductManagementPage />
               </ProtectedRoute>
             } />
             

@@ -54,10 +54,12 @@ const MainLayout = ({ children }) => {
   }, []);
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/', roles: [] },
-    { text: 'Point of Sale', icon: <PosIcon />, path: '/pos', roles: ['cashier', 'supervisor'] },
-    { text: 'Products', icon: <InventoryIcon />, path: '/products', roles: [] },
-  ];
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/', roles: [] },
+  { text: 'Point of Sale', icon: <PosIcon />, path: '/pos', roles: ['cashier', 'supervisor'] },
+  { text: 'Products', icon: <InventoryIcon />, path: '/products', roles: [] },
+  { text: 'Inventory Management', icon: <InventoryIcon />, path: '/products/manage', roles: ['owner', 'manager', 'supervisor'] },
+  { text: 'Employees', icon: <PersonIcon />, path: '/employees', roles: ['owner', 'manager'] },
+];
 
   const filteredMenuItems = menuItems.filter(item => {
     if (item.roles.length === 0) return true;
