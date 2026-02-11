@@ -27,7 +27,7 @@ import { useAuthStore } from '../stores/authStore';
 
 export default function Cart({ onCheckoutSuccess }) {
   const { items, removeItem, updateQuantity, getSubtotal, clearCart } = useCartStore();
-  const { business } = useAuthStore();
+  const { user, business } = useAuthStore();
   
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [tenderAmount, setTenderAmount] = useState('');
@@ -65,8 +65,8 @@ export default function Cart({ onCheckoutSuccess }) {
 
     const saleData = {
       business: business?.id || 1,
-      receipt_number: `REC${Date.now()}`,
-      customer_name: '',
+      receipt_number: `RCP-${Date.now().toString().slice(-8)}`,
+      customer_name: 'Walk-in Customer',
       customer_phone: '',
       subtotal: subtotal.toFixed(2),
       tax_amount: '0.00',
@@ -90,10 +90,32 @@ export default function Cart({ onCheckoutSuccess }) {
       const result = await syncService.queueSale(saleData);
       
       if (result.success) {
+        // Create proper sale response for receipt
+        const saleResponse = {
+          data: {
+            receipt_number: saleData.receipt_number,
+            created_at: new Date().toISOString(),
+            customer_name: saleData.customer_name,
+            customer_phone: saleData.customer_phone,
+            subtotal: saleData.subtotal,
+            tax_amount: saleData.tax_amount,
+            discount_amount: saleData.discount_amount,
+            total_amount: saleData.total_amount,
+            amount_paid: saleData.amount_paid,
+            change_given: saleData.change_given,
+            cashier: {
+              name: user?.first_name || 'Staff'
+            }
+          }
+        };
+        
         clearCart();
         setTenderAmount('');
         setChangeAmount(0);
-        if (onCheckoutSuccess) onCheckoutSuccess(result);
+        
+        if (onCheckoutSuccess) {
+          onCheckoutSuccess(saleResponse);
+        }
         
         alert(result.synced ? 'Sale completed!' : 'Sale saved offline - will sync later');
       }

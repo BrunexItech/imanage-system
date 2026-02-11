@@ -35,6 +35,7 @@ import {
 } from '@mui/icons-material';
 import { useReactToPrint } from 'react-to-print';
 import { useCartStore } from '../stores/cartStore';
+import { useAuthStore } from '../stores/authStore';
 import { productAPI } from '../services/api';
 import Cart from '../components/Cart';
 import ReceiptTemplate from '../components/ReceiptTemplate';
@@ -48,6 +49,7 @@ export default function POSPage() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const cartItems = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
+  const { user } = useAuthStore();
   
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
@@ -62,13 +64,13 @@ export default function POSPage() {
   const [quickQuantity, setQuickQuantity] = useState(1);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   
-  // NEW: Receipt states
+  // Receipt states
   const [receiptData, setReceiptData] = useState(null);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [saleCompleted, setSaleCompleted] = useState(false);
   const receiptRef = useRef();
 
-  // NEW: Print handler
+  // Print handler
   const handlePrint = useReactToPrint({
     content: () => receiptRef.current,
     documentTitle: `Receipt-${receiptData?.sale?.receipt_number || 'sale'}`,
@@ -161,11 +163,21 @@ export default function POSPage() {
     setSearch('');
   };
 
-  // NEW: Handle successful checkout - generate receipt
+  // Handle successful checkout - generate receipt
   const handleCheckoutSuccess = async (saleResponse) => {
     try {
+      console.log('Receipt triggered with:', saleResponse);
+      
       // Load business data
       const business = await receiptService.loadBusinessData();
+      if (!business) {
+        console.error('Failed to load business data');
+        setSaleCompleted(true);
+        setShowReceiptDialog(true);
+        clearCart();
+        if (isMobile) setCartDrawerOpen(false);
+        return;
+      }
       
       // Get cart items for receipt
       const items = cartItems.map(item => ({
@@ -177,22 +189,22 @@ export default function POSPage() {
       
       // Calculate totals
       const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
-      const tax = subtotal * (business?.tax_rate || 16) / 100;
+      const tax = subtotal * (parseFloat(business?.tax_rate) || 16) / 100;
       const total = subtotal + tax;
       
       // Create sale data object
       const saleData = {
         receipt_number: saleResponse?.data?.receipt_number || `RCP-${Date.now().toString().slice(-8)}`,
         created_at: new Date().toISOString(),
-        cashier: { name: useCartStore.getState().user?.first_name || 'Staff' },
+        cashier: saleResponse?.data?.cashier?.name || user?.first_name || 'Staff',
         customer_name: saleResponse?.data?.customer_name || 'Walk-in Customer',
         customer_phone: saleResponse?.data?.customer_phone || '',
         subtotal: subtotal,
         tax_amount: tax,
         discount_amount: saleResponse?.data?.discount_amount || 0,
         total_amount: total,
-        amount_paid: saleResponse?.data?.amount_paid || total,
-        change_given: saleResponse?.data?.change_given || 0,
+        amount_paid: parseFloat(saleResponse?.data?.amount_paid) || total,
+        change_given: parseFloat(saleResponse?.data?.change_given) || 0,
       };
       
       // Generate receipt data
@@ -209,59 +221,26 @@ export default function POSPage() {
       }
     } catch (error) {
       console.error('Failed to generate receipt:', error);
-      // Still show success but without receipt
+      // Still show success dialog
       setSaleCompleted(true);
       setShowReceiptDialog(true);
+      clearCart();
+      if (isMobile) {
+        setCartDrawerOpen(false);
+      }
     }
   };
 
-  // NEW: WhatsApp handler
+  // WhatsApp handler (placeholder - not active)
   const handleWhatsApp = () => {
-    if (!receiptData?.sale?.customer_phone) {
-      alert('Customer phone number required for WhatsApp receipt');
-      return;
-    }
-    
-    const text = generateWhatsAppText(receiptData);
-    const phone = receiptData.sale.customer_phone.replace(/\D/g, '');
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    alert('WhatsApp receipt coming soon');
   };
 
-  // NEW: Generate WhatsApp text
-  const generateWhatsAppText = (data) => {
-    const { business, sale, items, totals } = data;
-    
-    let text = `*${business.name}*\n`;
-    text += `${business.address || ''}\n`;
-    if (business.phone) text += `Tel: ${business.phone}\n`;
-    text += `\n`;
-    text += `Receipt: ${sale.receipt_number}\n`;
-    text += `Date: ${sale.date}\n`;
-    text += `Cashier: ${sale.cashier}\n`;
-    text += `Customer: ${sale.customer_name}\n`;
-    if (sale.customer_phone) text += `Tel: ${sale.customer_phone}\n`;
-    text += `\n*ITEMS*\n`;
-    
-    items.forEach(item => {
-      text += `${item.name} x${item.quantity} @ ${item.price.toFixed(2)} = ${item.total.toFixed(2)}\n`;
-    });
-    
-    text += `\nSubtotal: ${totals.subtotal.toFixed(2)}`;
-    if (totals.discount > 0) text += `\nDiscount: -${totals.discount.toFixed(2)}`;
-    text += `\nTax: ${totals.tax.toFixed(2)}`;
-    text += `\n*TOTAL: ${totals.total.toFixed(2)}*`;
-    text += `\nPaid: ${totals.paid.toFixed(2)}`;
-    text += `\nChange: ${totals.change.toFixed(2)}`;
-    text += `\n\n${business.footer || 'Thank you for your business!'}`;
-    
-    return text;
-  };
-
-  // NEW: Close receipt dialog
+  // Close receipt dialog
   const handleCloseReceipt = () => {
     setShowReceiptDialog(false);
     setSaleCompleted(false);
+    setReceiptData(null);
   };
 
   const getStockColor = (product) => {
@@ -720,7 +699,7 @@ export default function POSPage() {
         </Drawer>
       )}
 
-      {/* NEW: Receipt Dialog */}
+      {/* Receipt Dialog */}
       <Dialog
         open={showReceiptDialog}
         onClose={handleCloseReceipt}
