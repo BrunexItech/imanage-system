@@ -2,22 +2,22 @@ import api from './api';
 
 export const employeeAPI = {
   // Get all employees for current business
-  getEmployees: () => api.get('/accounts/users/'),
+  getEmployees: () => api.get('/auth/users/'),
   
   // Get single employee
-  getEmployee: (id) => api.get(`/accounts/users/${id}/`),
+  getEmployee: (id) => api.get(`/auth/users/${id}/`),
   
   // Create new employee (cashier/manager/supervisor)
-  createEmployee: (data) => api.post('/accounts/users/create/', data),
+  createEmployee: (data) => api.post('/auth/users/create/', data),
   
   // Update employee
-  updateEmployee: (id, data) => api.patch(`/accounts/users/${id}/`, data),
+  updateEmployee: (id, data) => api.patch(`/auth/users/${id}/`, data),
   
   // Deactivate/reactivate employee
   toggleEmployeeStatus: (id, isActive) => 
-    api.patch(`/accounts/users/${id}/`, { is_active: isActive }),
+    api.patch(`/auth/users/${id}/`, { is_active: isActive }),
   
   // Reset password (sets temporary password)
   resetPassword: (id, tempPassword) => 
-    api.post(`/accounts/users/${id}/reset-password/`, { password: tempPassword }),
+    api.post(`/auth/users/${id}/reset-password/`, { password: tempPassword }),
 };
