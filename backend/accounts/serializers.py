@@ -8,10 +8,29 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'password', 'first_name', 'last_name', 'phone_number', 'role']
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ['id', 'email', 'password', 'first_name', 'last_name', 'phone_number', 'role', 'business']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'phone_number': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'business': {'required': False, 'allow_null': True},
+            'email': {'required': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'role': {'required': False, 'allow_null': True}
+        }
     
     def create(self, validated_data):
+        # Remove business from validated data if present
+        business = validated_data.pop('business', None)
+        
+        # Ensure phone_number is never None
+        if 'phone_number' not in validated_data or validated_data['phone_number'] is None:
+            validated_data['phone_number'] = ''
+        
+        # Ensure role has a default
+        if 'role' not in validated_data or not validated_data['role']:
+            validated_data['role'] = 'cashier'
+        
         # Create user with hashed password
         user = User.objects.create_user(
             email=validated_data['email'],
@@ -21,6 +40,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             phone_number=validated_data.get('phone_number', ''),
             role=validated_data.get('role', 'cashier')
         )
+        
+        # Assign business if provided
+        if business:
+            user.business = business
+            user.save()
+            
         return user
 
 # User login serializer
@@ -42,5 +67,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'phone_number', 'role', 
-                  'current_shift_open', 'current_shift_start', 'current_shift_float']
-        read_only_fields = ['email', 'role']  # Cannot change email/role via profile
+                  'is_active', 'current_shift_open', 'current_shift_start', 'current_shift_float']
+        read_only_fields = ['email']

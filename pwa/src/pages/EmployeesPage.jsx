@@ -129,24 +129,49 @@ export default function EmployeesPage() {
   };
 
   const handleSubmit = async () => {
-    try {
-      if (dialogMode === 'add') {
-        await employeeAPI.createEmployee(formData);
-        showSnackbar('Employee created successfully', 'success');
-      } else if (dialogMode === 'edit') {
-        await employeeAPI.updateEmployee(selectedEmployee.id, formData);
-        showSnackbar('Employee updated successfully', 'success');
-      } else if (dialogMode === 'reset') {
-        await employeeAPI.resetPassword(selectedEmployee.id, tempPassword);
-        showSnackbar(`Password reset successful. New password: ${tempPassword}`, 'success');
-      }
-      setOpenDialog(false);
-      fetchEmployees();
-    } catch (error) {
-      const msg = error.response?.data?.error || 'Operation failed';
-      showSnackbar(msg, 'error');
+  try {
+    // Clean the data before sending - remove any undefined or null values
+    const cleanedData = {
+      email: formData.email || '',
+      password: formData.password || '',
+      first_name: formData.first_name || '',
+      last_name: formData.last_name || '',
+      phone_number: formData.phone_number || '',
+      role: formData.role || 'cashier',
+    };
+    
+    // Remove business field - backend assigns it automatically
+    delete cleanedData.business;
+    
+    if (dialogMode === 'add') {
+      await employeeAPI.createEmployee(cleanedData);
+      showSnackbar('Employee created successfully', 'success');
+    } else if (dialogMode === 'edit') {
+      // For edit, only send fields that can be updated
+      const updateData = {
+        first_name: cleanedData.first_name,
+        last_name: cleanedData.last_name,
+        phone_number: cleanedData.phone_number,
+        role: cleanedData.role,
+      };
+      await employeeAPI.updateEmployee(selectedEmployee.id, updateData);
+      showSnackbar('Employee updated successfully', 'success');
+    } else if (dialogMode === 'reset') {
+      await employeeAPI.resetPassword(selectedEmployee.id, tempPassword);
+      showSnackbar(`Password reset successful. New password: ${tempPassword}`, 'success');
     }
-  };
+    setOpenDialog(false);
+    fetchEmployees();
+  } catch (error) {
+    console.error('Submit error:', error);
+    const msg = error.response?.data?.error || 
+                error.response?.data?.email?.[0] || 
+                error.response?.data?.phone_number?.[0] ||
+                error.response?.data?.password?.[0] ||
+                'Operation failed. Please check all fields.';
+    showSnackbar(msg, 'error');
+  }
+};
 
   const handleToggleStatus = async (employee) => {
     try {
