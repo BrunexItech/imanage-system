@@ -43,6 +43,22 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     
     def get_queryset(self):
         return Product.objects.filter(business=self.request.user.business)
+    
+    
+# Add this after ProductDetailView
+class ProductDeleteView(generics.DestroyAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Product.objects.filter(business=self.request.user.business)
+    
+    def perform_destroy(self, instance):
+        # Only owners and managers can delete products
+        if self.request.user.role not in ['owner', 'manager']:
+            raise permissions.PermissionDenied("Only owners and managers can delete products")
+        instance.delete()
+
 
 # Low stock alert endpoint
 class LowStockProductsView(generics.ListAPIView):

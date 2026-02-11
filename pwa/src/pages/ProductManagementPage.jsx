@@ -35,7 +35,6 @@ import {
   useTheme,
   useMediaQuery,
   Tooltip,
-  Fade,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -45,8 +44,6 @@ import {
   Inventory as InventoryIcon,
   Category as CategoryIcon,
   Search as SearchIcon,
-  QrCodeScanner as BarcodeIcon,
-  TrendingUp as TrendingUpIcon,
   AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
@@ -65,7 +62,7 @@ export default function ProductManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState('add'); // 'add', 'edit', 'category'
+  const [dialogMode, setDialogMode] = useState('add');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -217,7 +214,7 @@ export default function ProductManagementPage() {
     const matchesSearch = 
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.barcode.includes(searchTerm);
+      (p.barcode && p.barcode.includes(searchTerm));
     
     if (tabValue === 0) return matchesSearch;
     if (tabValue === 1) return matchesSearch && p.is_low_stock;
@@ -235,7 +232,6 @@ export default function ProductManagementPage() {
   const renderMobileCard = (product) => (
     <Card key={product.id} elevation={2} sx={{ mb: 2, borderRadius: 2 }}>
       <CardContent>
-        {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
           <Box>
             <Typography variant="subtitle1" fontWeight="bold">
@@ -253,14 +249,12 @@ export default function ProductManagementPage() {
           />
         </Box>
 
-        {/* Category */}
         <Typography variant="body2" color="primary" sx={{ mb: 1.5 }}>
           {product.category_name || 'Uncategorized'}
         </Typography>
 
         <Divider sx={{ my: 1.5 }} />
 
-        {/* Pricing & Stock Grid */}
         <Grid container spacing={2}>
           <Grid item xs={4}>
             <Typography variant="caption" color="textSecondary" display="block">
@@ -312,7 +306,6 @@ export default function ProductManagementPage() {
           </Grid>
         </Grid>
 
-        {/* Quick Actions */}
         {canEdit && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
             <Button
@@ -498,489 +491,487 @@ export default function ProductManagementPage() {
   return (
     <Box sx={{ 
       height: '100%', 
-      overflow: 'auto', 
-      p: { xs: 2, sm: 3 } 
+      width: '100%',
+      overflow: 'auto'
     }}>
-      {/* Header Section - Responsive */}
       <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', md: 'row' },
-        justifyContent: 'space-between',
-        alignItems: { xs: 'stretch', md: 'center' },
-        mb: 3,
-        gap: 2
+        p: { xs: 2, sm: 3 }
       }}>
-        <Box>
-          <Typography variant={isMobile ? "h5" : "h4"} fontWeight="bold" gutterBottom>
-            Inventory Management
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {business?.name} • Manage products and stock levels
-          </Typography>
-        </Box>
+        {/* Header Section */}
         <Box sx={{ 
           display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: 1 
+          flexDirection: { xs: 'column', md: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'stretch', md: 'center' },
+          mb: 3,
+          gap: 2
         }}>
-          <Button
-            variant="outlined"
-            startIcon={<CategoryIcon />}
-            onClick={handleOpenCategoryDialog}
-            fullWidth={isMobile}
-            size={isMobile ? "medium" : "medium"}
-          >
-            Add Category
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenAddDialog}
-            fullWidth={isMobile}
-            size={isMobile ? "medium" : "large"}
-          >
-            Add Product
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Stats Cards - Responsive Grid */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
-            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'primary.light', 
-                  p: 1, 
-                  borderRadius: 2,
-                  display: 'flex'
-                }}>
-                  <InventoryIcon color="primary" />
-                </Box>
-                <Box>
-                  <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
-                    {totalProducts}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Total Products
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2, bgcolor: lowStockCount > 0 ? 'warning.light' : 'inherit' }}>
-            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'warning.light', 
-                  p: 1, 
-                  borderRadius: 2,
-                  display: 'flex'
-                }}>
-                  <WarningIcon color="warning" />
-                </Box>
-                <Box>
-                  <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
-                    {lowStockCount}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Low Stock
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
-            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'error.light', 
-                  p: 1, 
-                  borderRadius: 2,
-                  display: 'flex'
-                }}>
-                  <DeleteIcon color="error" />
-                </Box>
-                <Box>
-                  <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
-                    {outOfStockCount}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Out of Stock
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
-            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'success.light', 
-                  p: 1, 
-                  borderRadius: 2,
-                  display: 'flex'
-                }}>
-                  <MoneyIcon color="success" />
-                </Box>
-                <Box>
-                  <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
-                    KES {totalValue.toLocaleString()}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Stock Value
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Search and Filters */}
-      <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Search by name, SKU, or barcode..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Tabs
-              value={tabValue}
-              onChange={(e, v) => setTabValue(v)}
-              variant={isMobile ? "fullWidth" : "standard"}
-              sx={{
-                '& .MuiTab-root': {
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                  minWidth: { xs: 'auto', sm: 120 },
-                }
-              }}
-            >
-              <Tab label="All Products" />
-              <Tab 
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    Low Stock
-                    {lowStockCount > 0 && (
-                      <Chip 
-                        label={lowStockCount} 
-                        size="small" 
-                        color="warning" 
-                        sx={{ ml: 0.5, height: 20 }}
-                      />
-                    )}
-                  </Box>
-                } 
-              />
-              <Tab label="Out of Stock" />
-            </Tabs>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Products List - Responsive */}
-      {loading ? (
-        <Box sx={{ width: '100%', p: 4 }}>
-          <LinearProgress />
-        </Box>
-      ) : (
-        <>
-          {/* Mobile/Tablet: Card View */}
-          {(isMobile || isTablet) && (
-            <Box>
-              {filteredProducts.length === 0 ? (
-                <Paper sx={{ p: 4, textAlign: 'center' }}>
-                  <InventoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                  <Typography color="textSecondary">
-                    No products found matching your criteria
-                  </Typography>
-                </Paper>
-              ) : (
-                filteredProducts.map(renderMobileCard)
-              )}
-            </Box>
-          )}
-          
-          {/* Desktop: Table View */}
-          {!isMobile && !isTablet && renderDesktopTable()}
-        </>
-      )}
-
-      {/* Add/Edit Product Dialog - Fully Responsive */}
-      <Dialog 
-        open={openDialog && dialogMode !== 'category'} 
-        onClose={() => setOpenDialog(false)} 
-        maxWidth="md" 
-        fullWidth
-        fullScreen={isMobile}
-        PaperProps={{
-          sx: isMobile ? { m: 0, height: '100%', maxHeight: '100%', borderRadius: 0 } : {}
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          {dialogMode === 'add' ? 'Add New Product' : 'Edit Product'}
-        </DialogTitle>
-        <DialogContent dividers={isMobile}>
+          <Box>
+            <Typography variant={isMobile ? "h5" : "h4"} fontWeight="bold" gutterBottom>
+              Inventory Management
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              {business?.name} • Manage products and stock levels
+            </Typography>
+          </Box>
           <Box sx={{ 
-            pt: { xs: 1, sm: 2 },
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2.5
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 1 
           }}>
-            {/* Basic Info */}
-            <TextField
-              label="Product Name"
-              fullWidth
-              size={isMobile ? "small" : "medium"}
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  label="SKU"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  label="Barcode"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={formData.category}
-                    label="Category"
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <MenuItem value="">Uncategorized</MenuItem>
-                    {categories.map((cat) => (
-                      <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-
-            <Divider sx={{ my: 1 }} />
-
-            {/* Pricing */}
-            <Typography variant="subtitle2" fontWeight="bold">
-              Pricing
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6} sm={4}>
-                <TextField
-                  label="Cost Price"
-                  type="number"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.cost_price}
-                  onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">KES</InputAdornment>,
-                  }}
-                  required
-                />
-              </Grid>
-              <Grid item xs={6} sm={4}>
-                <TextField
-                  label="Selling Price"
-                  type="number"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.selling_price}
-                  onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">KES</InputAdornment>,
-                  }}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  label="Profit Margin"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.selling_price && formData.cost_price 
-                    ? `KES ${(parseFloat(formData.selling_price) - parseFloat(formData.cost_price)).toFixed(2)}`
-                    : '—'}
-                  disabled
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">≈</InputAdornment>,
-                  }}
-                />
-              </Grid>
-            </Grid>
-
-            <Divider sx={{ my: 1 }} />
-
-            {/* Stock Management */}
-            <Typography variant="subtitle2" fontWeight="bold">
-              Stock Management
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={4} sm={3}>
-                <TextField
-                  label="Current Stock"
-                  type="number"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.current_stock}
-                  onChange={(e) => setFormData({ ...formData, current_stock: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={4} sm={3}>
-                <TextField
-                  label="Min Stock"
-                  type="number"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.minimum_stock}
-                  onChange={(e) => setFormData({ ...formData, minimum_stock: e.target.value })}
-                  helperText="Low stock alert"
-                />
-              </Grid>
-              <Grid item xs={4} sm={3}>
-                <TextField
-                  label="Max Stock"
-                  type="number"
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  value={formData.maximum_stock}
-                  onChange={(e) => setFormData({ ...formData, maximum_stock: e.target.value })}
-                />
-              </Grid>
-            </Grid>
-
-            {/* Description */}
-            <TextField
-              label="Description"
-              multiline
-              rows={3}
-              fullWidth
-              size={isMobile ? "small" : "medium"}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Optional product description"
-            />
+            <Button
+              variant="outlined"
+              startIcon={<CategoryIcon />}
+              onClick={handleOpenCategoryDialog}
+              fullWidth={isMobile}
+              size={isMobile ? "medium" : "medium"}
+            >
+              Add Category
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleOpenAddDialog}
+              fullWidth={isMobile}
+              size={isMobile ? "medium" : "large"}
+            >
+              Add Product
+            </Button>
           </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setOpenDialog(false)} fullWidth={isMobile}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained"
-            fullWidth={isMobile}
-            disabled={!formData.name || !formData.sku || !formData.cost_price || !formData.selling_price}
-          >
-            {dialogMode === 'add' ? 'Add Product' : 'Update Product'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
 
-      {/* Add Category Dialog - Fully Responsive */}
-      <Dialog 
-        open={openDialog && dialogMode === 'category'} 
-        onClose={() => setOpenDialog(false)} 
-        maxWidth="sm" 
-        fullWidth
-        fullScreen={isMobile}
-        PaperProps={{
-          sx: isMobile ? { m: 0, height: '100%', maxHeight: '100%', borderRadius: 0 } : {}
-        }}
-      >
-        <DialogTitle>Add Category</DialogTitle>
-        <DialogContent dividers={isMobile}>
-          <Box sx={{ pt: { xs: 1, sm: 2 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Category Name"
-              fullWidth
-              size={isMobile ? "small" : "medium"}
-              value={categoryFormData.name}
-              onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-              required
-            />
-            <TextField
-              label="Description"
-              multiline
-              rows={2}
-              fullWidth
-              size={isMobile ? "small" : "medium"}
-              value={categoryFormData.description}
-              onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-              placeholder="Optional description"
-            />
+        {/* Stats Cards */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={6} md={3}>
+            <Card elevation={1} sx={{ borderRadius: 2 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ 
+                    bgcolor: 'primary.light', 
+                    p: 1, 
+                    borderRadius: 2,
+                    display: 'flex'
+                  }}>
+                    <InventoryIcon color="primary" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
+                      {totalProducts}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Total Products
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} md={3}>
+            <Card elevation={1} sx={{ borderRadius: 2, bgcolor: lowStockCount > 0 ? 'warning.light' : 'inherit' }}>
+              <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ 
+                    bgcolor: 'warning.light', 
+                    p: 1, 
+                    borderRadius: 2,
+                    display: 'flex'
+                  }}>
+                    <WarningIcon color="warning" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
+                      {lowStockCount}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Low Stock
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} md={3}>
+            <Card elevation={1} sx={{ borderRadius: 2 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ 
+                    bgcolor: 'error.light', 
+                    p: 1, 
+                    borderRadius: 2,
+                    display: 'flex'
+                  }}>
+                    <DeleteIcon color="error" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
+                      {outOfStockCount}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Out of Stock
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} md={3}>
+            <Card elevation={1} sx={{ borderRadius: 2 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ 
+                    bgcolor: 'success.light', 
+                    p: 1, 
+                    borderRadius: 2,
+                    display: 'flex'
+                  }}>
+                    <MoneyIcon color="success" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
+                      KES {totalValue.toLocaleString()}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Stock Value
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Search and Filters */}
+        <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by name, SKU, or barcode..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Tabs
+                value={tabValue}
+                onChange={(e, v) => setTabValue(v)}
+                variant={isMobile ? "fullWidth" : "standard"}
+                sx={{
+                  '& .MuiTab-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    minWidth: { xs: 'auto', sm: 120 },
+                  }
+                }}
+              >
+                <Tab label="All Products" />
+                <Tab 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      Low Stock
+                      {lowStockCount > 0 && (
+                        <Chip 
+                          label={lowStockCount} 
+                          size="small" 
+                          color="warning" 
+                          sx={{ ml: 0.5, height: 20 }}
+                        />
+                      )}
+                    </Box>
+                  } 
+                />
+                <Tab label="Out of Stock" />
+              </Tabs>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* Products List */}
+        {loading ? (
+          <Box sx={{ width: '100%', p: 4 }}>
+            <LinearProgress />
           </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setOpenDialog(false)} fullWidth={isMobile}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained"
-            fullWidth={isMobile}
-            disabled={!categoryFormData.name}
-          >
-            Create Category
-          </Button>
-        </DialogActions>
-      </Dialog>
+        ) : (
+          <>
+            {(isMobile || isTablet) ? (
+              <Box>
+                {filteredProducts.length === 0 ? (
+                  <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <InventoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                    <Typography color="textSecondary">
+                      No products found matching your criteria
+                    </Typography>
+                  </Paper>
+                ) : (
+                  filteredProducts.map(renderMobileCard)
+                )}
+              </Box>
+            ) : (
+              renderDesktopTable()
+            )}
+          </>
+        )}
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ 
-          vertical: isMobile ? 'top' : 'bottom', 
-          horizontal: isMobile ? 'center' : 'right' 
-        }}
-      >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
+        {/* Add/Edit Product Dialog */}
+        <Dialog 
+          open={openDialog && dialogMode !== 'category'} 
+          onClose={() => setOpenDialog(false)} 
+          maxWidth="md" 
+          fullWidth
+          fullScreen={isMobile}
+          PaperProps={{
+            sx: isMobile ? { m: 0, height: '100%', maxHeight: '100%', borderRadius: 0 } : {}
+          }}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <DialogTitle sx={{ pb: 1 }}>
+            {dialogMode === 'add' ? 'Add New Product' : 'Edit Product'}
+          </DialogTitle>
+          <DialogContent dividers={isMobile}>
+            <Box sx={{ 
+              pt: { xs: 1, sm: 2 },
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2.5
+            }}>
+              <TextField
+                label="Product Name"
+                fullWidth
+                size={isMobile ? "small" : "medium"}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="SKU"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.sku}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Barcode"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.barcode}
+                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                    <InputLabel>Category</InputLabel>
+                    <Select
+                      value={formData.category}
+                      label="Category"
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    >
+                      <MenuItem value="">Uncategorized</MenuItem>
+                      {categories.map((cat) => (
+                        <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 1 }} />
+
+              <Typography variant="subtitle2" fontWeight="bold">
+                Pricing
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={6} sm={4}>
+                  <TextField
+                    label="Cost Price"
+                    type="number"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.cost_price}
+                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">KES</InputAdornment>,
+                    }}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <TextField
+                    label="Selling Price"
+                    type="number"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.selling_price}
+                    onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">KES</InputAdornment>,
+                    }}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Profit Margin"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.selling_price && formData.cost_price 
+                      ? `KES ${(parseFloat(formData.selling_price) - parseFloat(formData.cost_price)).toFixed(2)}`
+                      : '—'}
+                    disabled
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">≈</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 1 }} />
+
+              <Typography variant="subtitle2" fontWeight="bold">
+                Stock Management
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={4} sm={3}>
+                  <TextField
+                    label="Current Stock"
+                    type="number"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.current_stock}
+                    onChange={(e) => setFormData({ ...formData, current_stock: e.target.value })}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={4} sm={3}>
+                  <TextField
+                    label="Min Stock"
+                    type="number"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.minimum_stock}
+                    onChange={(e) => setFormData({ ...formData, minimum_stock: e.target.value })}
+                    helperText="Low stock alert"
+                  />
+                </Grid>
+                <Grid item xs={4} sm={3}>
+                  <TextField
+                    label="Max Stock"
+                    type="number"
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    value={formData.maximum_stock}
+                    onChange={(e) => setFormData({ ...formData, maximum_stock: e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+
+              <TextField
+                label="Description"
+                multiline
+                rows={3}
+                fullWidth
+                size={isMobile ? "small" : "medium"}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional product description"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2.5 }}>
+            <Button onClick={() => setOpenDialog(false)} fullWidth={isMobile}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit} 
+              variant="contained"
+              fullWidth={isMobile}
+              disabled={!formData.name || !formData.sku || !formData.cost_price || !formData.selling_price}
+            >
+              {dialogMode === 'add' ? 'Add Product' : 'Update Product'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Add Category Dialog */}
+        <Dialog 
+          open={openDialog && dialogMode === 'category'} 
+          onClose={() => setOpenDialog(false)} 
+          maxWidth="sm" 
+          fullWidth
+          fullScreen={isMobile}
+          PaperProps={{
+            sx: isMobile ? { m: 0, height: '100%', maxHeight: '100%', borderRadius: 0 } : {}
+          }}
+        >
+          <DialogTitle>Add Category</DialogTitle>
+          <DialogContent dividers={isMobile}>
+            <Box sx={{ pt: { xs: 1, sm: 2 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Category Name"
+                fullWidth
+                size={isMobile ? "small" : "medium"}
+                value={categoryFormData.name}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                required
+              />
+              <TextField
+                label="Description"
+                multiline
+                rows={2}
+                fullWidth
+                size={isMobile ? "small" : "medium"}
+                value={categoryFormData.description}
+                onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+                placeholder="Optional description"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2.5 }}>
+            <Button onClick={() => setOpenDialog(false)} fullWidth={isMobile}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit} 
+              variant="contained"
+              fullWidth={isMobile}
+              disabled={!categoryFormData.name}
+            >
+              Create Category
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ 
+            vertical: isMobile ? 'top' : 'bottom', 
+            horizontal: isMobile ? 'center' : 'right' 
+          }}
+        >
+          <Alert 
+            onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            severity={snackbar.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </Box>
   );
 }

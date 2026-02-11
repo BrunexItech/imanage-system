@@ -58,9 +58,13 @@ export const productAPI = {
   getProducts: () => api.get('/inventory/products/'),
   getProduct: (id) => api.get(`/inventory/products/${id}/`),
   createProduct: (data) => api.post('/inventory/products/', data),
+  updateProduct: (id, data) => api.patch(`/inventory/products/${id}/`, data),
+  deleteProduct: (id) => api.delete(`/inventory/products/${id}/delete/`),
   searchProducts: (query) => api.get(`/inventory/products/?search=${query}`),
   getLowStock: () => api.get('/inventory/products/low-stock/'),
+  
   getCategories: () => api.get('/inventory/categories/'),
+  createCategory: (data) => api.post('/inventory/categories/', data),
 };
 
 // Sales API calls

@@ -14,6 +14,7 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -71,13 +72,23 @@ export default function LoginScreen({ navigation }) {
         keyboardType="email-address"
       />
       
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity
+          style={styles.eyeButton}
+          onPress={() => setShowPassword(!showPassword)}
+        >
+          <Text style={styles.eyeIcon}>
+            {showPassword ? '👁️' : '👁️‍🗨️'}
+          </Text>
+        </TouchableOpacity>
+      </View>
       
       <TouchableOpacity
         style={styles.button}
@@ -123,6 +134,25 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 15,
+  },
+  eyeButton: {
+    padding: 15,
+  },
+  eyeIcon: {
+    fontSize: 20,
   },
   button: {
     backgroundColor: '#1976d2',

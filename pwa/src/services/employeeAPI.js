@@ -11,7 +11,7 @@ export const employeeAPI = {
   createEmployee: (data) => api.post('/accounts/users/', data),
   
   // Update employee
-  updateEmployee: (id, data) => api.put(`/accounts/users/${id}/`, data),
+  updateEmployee: (id, data) => api.patch(`/accounts/users/${id}/`, data),
   
   // Deactivate/reactivate employee
   toggleEmployeeStatus: (id, isActive) => 
