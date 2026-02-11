@@ -10,10 +10,9 @@ from sales.models import Sale
 from inventory.models import Product
 from payments.models import Expense
 from django.db import models
-from notifications.models import Notification
 
-# Import notification helper
-from notifications.views import send_business_notification
+# REMOVED: from notifications.models import Notification
+# REMOVED: from notifications.views import send_business_notification
 
 # Daily summary views
 class DailySummaryListView(generics.ListAPIView):
@@ -81,22 +80,33 @@ class DashboardView(APIView):
         )
         
         # Check if we should send low stock alert
-        if low_stock > 0:
-            # Send notification only once per day
-            today_alerts = Notification.objects.filter(
-                user=request.user,
-                notification_type='stock',
-                sent_at__date=today
-            ).count()
-            
-            if today_alerts == 0 and low_stock > 3:  # Only if more than 3 items low stock
-                send_business_notification(
-                    business=business,
-                    title='⚠️ Low Stock Alert',
-                    message=f'{low_stock} items are low in stock. Please check inventory.',
+        if low_stock > 0 and low_stock > 3:  # Only if more than 3 items low stock
+            try:
+                # Import inside function to avoid circular import
+                from notifications.models import Notification
+                from notifications.views import send_business_notification
+                
+                # Send notification only once per day
+                today_alerts = Notification.objects.filter(
+                    user=request.user,
                     notification_type='stock',
-                    data={'low_stock_count': low_stock}
-                )
+                    sent_at__date=today
+                ).count()
+                
+                if today_alerts == 0:
+                    send_business_notification(
+                        business=business,
+                        title='⚠️ Low Stock Alert',
+                        message=f'{low_stock} items are low in stock. Please check inventory.',
+                        notification_type='stock',
+                        data={'low_stock_count': low_stock}
+                    )
+            except ImportError:
+                # If notifications app not available, skip notification
+                pass
+            except Exception as e:
+                # Log error but don't break dashboard
+                print(f"Notification error: {e}")
         
         return Response({
             'today_sales': total_revenue,  # Total revenue
@@ -136,21 +146,41 @@ class SalesTrendView(APIView):
 # Add notification helper for sales
 def send_sale_notification(sale):
     """Send notification for new sale"""
-    from notifications.views import send_business_notification
-    from notifications.models import Notification
-    
-    business = sale.business
-    
-    # Send push notification
-    send_business_notification(
-        business=business,
-        title='💰 New Sale',
-        message=f'Receipt #{sale.receipt_number}: KES {sale.total_amount:.2f}',
-        notification_type='sale',
-        data={
-            'sale_id': sale.id,
-            'receipt_number': sale.receipt_number,
-            'amount': str(sale.total_amount),
-            'items_count': sale.items.count()
-        }
-    )
+    try:
+        from notifications.views import send_business_notification
+        from notifications.models import Notification
+        
+        business = sale.business
+        
+        # Store notification in database
+        Notification.objects.create(
+            user=business.owner,  # Assuming business has owner field
+            title='💰 New Sale',
+            message=f'Receipt #{sale.receipt_number}: KES {sale.total_amount:.2f}',
+            notification_type='sale',
+            data={
+                'sale_id': sale.id,
+                'receipt_number': sale.receipt_number,
+                'amount': str(sale.total_amount),
+                'items_count': sale.items.count()
+            }
+        )
+        
+        # Send push notification
+        send_business_notification(
+            business=business,
+            title='💰 New Sale',
+            message=f'Receipt #{sale.receipt_number}: KES {sale.total_amount:.2f}',
+            notification_type='sale',
+            data={
+                'sale_id': sale.id,
+                'receipt_number': sale.receipt_number,
+                'amount': str(sale.total_amount),
+                'items_count': sale.items.count()
+            }
+        )
+    except ImportError:
+        # If notifications app not available, skip
+        pass
+    except Exception as e:
+        print(f"Sale notification error: {e}")
